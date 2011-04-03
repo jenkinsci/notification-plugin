@@ -13,12 +13,20 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URL;
-import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.tikal.hudson.plugins.notification.model.BuildState;
 import com.tikal.hudson.plugins.notification.model.JobState;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.HttpParams;
+
 
 @SuppressWarnings("rawtypes")
 public enum Protocol {
@@ -69,14 +77,15 @@ public enum Protocol {
 		@Override
 		protected void send(String url, byte[] data) {
 			try {
-				URL targetUrl = new URL(url);
-				URLConnection connection = targetUrl.openConnection();
-				OutputStream output = connection.getOutputStream();
-				output.write(data);
-				output.flush();
-				output.close();
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
+                List<NameValuePair> params = new ArrayList<NameValuePair>();
+                params.add(new BasicNameValuePair("data", new String(data, "UTF-8")));
+                UrlEncodedFormEntity entity = new UrlEncodedFormEntity(params, "UTF-8");
+
+                HttpPost post = new HttpPost(url);
+                post.setEntity(entity);
+
+                new DefaultHttpClient().execute(post);
+
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
