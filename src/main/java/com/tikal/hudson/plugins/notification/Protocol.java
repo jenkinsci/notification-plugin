@@ -102,8 +102,12 @@ public enum Protocol {
 
 	private Gson gson = new GsonBuilder().create();
 
-	public void sendNotification(String url, Job job, Run run, Phase phase, String status) {
-		send(url, buildMessage(job, run, phase, status));
+	public void sendNotification(final String url, final Job job, final Run run, final Phase phase, final String status) {
+        new Thread(new Runnable() {
+            public void run() {
+                send(url, buildMessage(job, run, phase, status));                
+            }
+        }).start();
 	}
 
 	private byte[] buildMessage(Job job, Run run, Phase phase, String status) {
