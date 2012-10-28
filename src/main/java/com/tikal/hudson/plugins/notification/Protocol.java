@@ -18,7 +18,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
-import hudson.model.PasswordParameterValue;
 import hudson.model.Run;
 
 import java.io.IOException;
@@ -32,9 +31,6 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -83,16 +79,39 @@ public enum Protocol {
 		@Override
 		protected void send(String url, byte[] data) throws IOException {
             URL targetUrl = new URL(url);
-            URLConnection connection = targetUrl.openConnection();
-            if (connection instanceof HttpURLConnection)
-                ((HttpURLConnection) connection)
-                        .setFixedLengthStreamingMode(data.length);
-            connection.setDoInput(false);
+            if (!targetUrl.getProtocol().startsWith("http")) {
+              throw new IllegalArgumentException("Not an http(s) url: " + url);
+            }
+
+            HttpURLConnection connection = (HttpURLConnection) targetUrl.openConnection();
+            connection.setFixedLengthStreamingMode(data.length);
+            connection.setDoInput(true);
             connection.setDoOutput(true);
-            OutputStream output = connection.getOutputStream();
-            output.write(data);
-            output.flush();
-            output.close();
+
+            connection.connect();
+            try {
+              OutputStream output = connection.getOutputStream();
+              try {
+                output.write(data);
+                output.flush();
+              } finally {
+                output.close();
+              }
+            } finally {
+              // Follow an HTTP Temporary Redirect if we get one,
+              //
+              // NB: Normally using the HttpURLConnection interface, we'd call
+              // connection.setInstanceFollowRedirects(true) to enable 307 redirect following but
+              // since we have the connection in streaming mode this does not work and we instead
+              // re-direct manually.
+              if (307 == connection.getResponseCode()) {
+                String location = connection.getHeaderField("Location");
+                connection.disconnect();
+                send(location, data);
+              } else {
+                connection.disconnect();
+              }
+            }
 		}
 
 		public void validateUrl(String url) {
