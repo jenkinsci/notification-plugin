@@ -15,6 +15,7 @@ package com.tikal.hudson.plugins.notification;
 
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
+import hudson.model.Hudson;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
@@ -140,11 +141,12 @@ public enum Protocol {
 		buildState.setUrl(run.getUrl());
 		buildState.setPhase(phase);
 		buildState.setStatus(status);
-		try {
-			buildState.setFullUrl(run.getAbsoluteUrl());
-		} catch (IllegalStateException ignored) {
-			// Ignored
+
+		String rootUrl = Hudson.getInstance().getRootUrl();
+		if (rootUrl != null) {
+			buildState.setFullUrl(rootUrl + run.getUrl());
 		}
+
 		jobState.setBuild(buildState);
 
 		ParametersAction paramsAction = run.getAction(ParametersAction.class);
