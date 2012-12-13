@@ -77,6 +77,8 @@ public enum Protocol {
 		}
 	},
 	HTTP {
+		private static final int HTTP_CONNECT_TIMEOUT_MS = 1000;
+		private static final int HTTP_READ_TIMEOUT_MS = 10000;
 		@Override
 		protected void send(String url, byte[] data) throws IOException {
             URL targetUrl = new URL(url);
@@ -89,6 +91,8 @@ public enum Protocol {
             connection.setFixedLengthStreamingMode(data.length);
             connection.setDoInput(true);
             connection.setDoOutput(true);
+            connection.setConnectTimeout(HTTP_CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(HTTP_READ_TIMEOUT_MS);
 
             connection.connect();
             try {
