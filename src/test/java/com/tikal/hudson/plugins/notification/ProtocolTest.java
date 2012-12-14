@@ -36,6 +36,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Objects;
 import com.google.common.io.CharStreams;
@@ -57,15 +58,23 @@ public class ProtocolTest extends TestCase {
     private final String url;
     private final String method;
     private final String body;
+    private final String userInfo;
 
     Request(HttpServletRequest request) throws IOException {
-      this(request.getRequestURL().toString(), request.getMethod(), CharStreams.toString(request.getReader()));
+      this.url = request.getRequestURL().toString();
+      this.method = request.getMethod();
+      this.body = CharStreams.toString(request.getReader());
+      String auth = request.getHeader("Authorization");
+      this.userInfo = (null == auth) 
+              ? null
+              : new String(DatatypeConverter.parseBase64Binary(auth.split(" ")[1])) + "@";
     }
 
     Request(String url, String method, String body) {
       this.url = url;
       this.method = method;
       this.body = body;
+      this.userInfo = null;
     }
 
     @Override
@@ -91,6 +100,20 @@ public class ProtocolTest extends TestCase {
           .add("method", method)
           .add("body", body)
           .toString();
+    }
+
+    public String getUrl() {
+      return url;
+    }
+
+    public String getUrlWithAuthority() {
+      if (null == userInfo) {
+        // Detect possible bug: userInfo never moved from URI to Authorization header
+        return null;
+      }
+      else {
+        return url.replaceFirst("^http://", "http://" + userInfo);
+      }
     }
   }
 
@@ -142,6 +165,10 @@ public class ProtocolTest extends TestCase {
   }
 
   private UrlFactory startServer(Servlet servlet, String path) throws Exception {
+    return startSecureServer(servlet, path, "");
+  }
+
+  private UrlFactory startSecureServer(Servlet servlet, String path, String authority) throws Exception {
     SocketConnector connector = new SocketConnector();
     connector.setPort(0);
     connector.open();
@@ -156,7 +183,11 @@ public class ProtocolTest extends TestCase {
     server.start();
     servers.add(server);
 
-    final URL serverUrl = new URL(String.format("http://localhost:%d", connector.getLocalPort()));
+    if (!authority.isEmpty()) {
+      authority += "@";
+    }
+
+    final URL serverUrl = new URL(String.format("http://%slocalhost:%d", authority, connector.getLocalPort()));
     return new UrlFactory() {
       public String getUrl(String path) {
         try {
@@ -194,7 +225,22 @@ public class ProtocolTest extends TestCase {
     assertTrue(requests.isEmpty());
   }
 
-  public void testHttpPostWithRedirects() throws Exception {
+   public void testHttpPostWithBasicAuth() throws Exception {
+    BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+
+    UrlFactory urlFactory = startSecureServer(new RecordingServlet(requests), "/realpath", "fred:foo");
+
+    assertTrue(requests.isEmpty());
+
+    String uri = urlFactory.getUrl("/realpath");
+    Protocol.HTTP.send(uri, "Hello".getBytes());
+
+    Request theRequest = requests.take();
+    assertTrue(requests.isEmpty());
+    assertEquals(new Request(uri, "POST", "Hello").getUrl(), theRequest.getUrlWithAuthority());
+  }
+
+ public void testHttpPostWithRedirects() throws Exception {
     BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
 
     UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");

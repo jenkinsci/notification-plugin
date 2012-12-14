@@ -33,6 +33,8 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URL;
 
+import javax.xml.bind.DatatypeConverter;
+
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -86,6 +88,12 @@ public enum Protocol {
 
             HttpURLConnection connection = (HttpURLConnection) targetUrl.openConnection();
             connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            String userInfo = targetUrl.getUserInfo();
+            if (null != userInfo) {
+              String b64UserInfo = DatatypeConverter.printBase64Binary(userInfo.getBytes());
+              String authorizationHeader = "Basic " + b64UserInfo;
+              connection.setRequestProperty("Authorization", authorizationHeader);
+            }
             connection.setFixedLengthStreamingMode(data.length);
             connection.setDoInput(true);
             connection.setDoOutput(true);
