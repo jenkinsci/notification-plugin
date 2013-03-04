@@ -10,10 +10,10 @@
 						<table>
 							<tr>
 								<td>
-									<f:entry title="Output" description="" field="output">
-										<select class="setting-input" name="output">
-											<f:option value="JSON" selected="${endpoint.output=='JSON'}">JSON</f:option>
-											<f:option value="XML" selected="${endpoint.output=='XML'}">XML</f:option>
+									<f:entry title="Format" description="" field="format">
+										<select class="setting-input" name="format">
+											<f:option value="JSON" selected="${endpoint.format=='JSON'}">JSON</f:option>
+											<f:option value="XML" selected="${endpoint.format=='XML'}">XML</f:option>
 										</select>
 									</f:entry>
 								</td>

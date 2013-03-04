@@ -40,7 +40,7 @@ public enum Phase {
 			for (Endpoint target : targets) {
                 try {
                     JobState jobState = buildJobState(run.getParent(), run, this);
-					target.getProtocol().send(target.getUrl(), target.getOutput().serialize(jobState));
+					target.getProtocol().send(target.getUrl(), target.getFormat().serialize(jobState));
                 } catch (IOException e) {
                     e.printStackTrace(listener.error("Failed to notify "+target));
                 }
