@@ -39,7 +39,7 @@ public enum Phase {
 			List<Endpoint> targets = property.getEndpoints();
 			for (Endpoint target : targets) {
                 try {
-                    JobState jobState = buildJobState(run.getParent(), run, this);
+                    JobState jobState = buildJobState(run.getParent(), run);
 					target.getProtocol().send(target.getUrl(), target.getFormat().serialize(jobState));
                 } catch (IOException e) {
                     e.printStackTrace(listener.error("Failed to notify "+target));
@@ -48,14 +48,14 @@ public enum Phase {
 		}
 	}
 	
-	private JobState buildJobState(Job job, Run run, Phase phase) {
+	private JobState buildJobState(Job job, Run run) {
 		JobState jobState = new JobState();
 		jobState.setName(job.getName());
 		jobState.setUrl(job.getUrl());
 		BuildState buildState = new BuildState();
 		buildState.setNumber(run.number);
 		buildState.setUrl(run.getUrl());
-		buildState.setPhase(phase);
+		buildState.setPhase(this);
 		buildState.setStatus(getStatus(run));
 
 		String rootUrl = Hudson.getInstance().getRootUrl();
