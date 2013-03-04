@@ -26,8 +26,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URL;
 
-import com.tikal.hudson.plugins.notification.model.JobState;
-
 public enum Protocol {
 
 	UDP {
@@ -112,10 +110,6 @@ public enum Protocol {
 			}
 		}
 	};
-
-	public void sendNotification(Endpoint endpoint, JobState jobState) throws IOException {
-		send(endpoint.getUrl(), endpoint.getOutput().serialize(jobState));
-	}
 
 	abstract protected void send(String url, byte[] data) throws IOException;
 

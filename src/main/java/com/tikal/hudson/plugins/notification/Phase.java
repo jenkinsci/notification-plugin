@@ -38,7 +38,8 @@ public enum Phase {
 			List<Endpoint> targets = property.getEndpoints();
 			for (Endpoint target : targets) {
                 try {
-                    target.getProtocol().sendNotification(target, buildJobState(run.getParent(), run, this, status));
+                    JobState jobState = buildJobState(run.getParent(), run, this, status);
+					target.getProtocol().send(target.getUrl(), target.getOutput().serialize(jobState));
                 } catch (IOException e) {
                     e.printStackTrace(listener.error("Failed to notify "+target));
                 }
