@@ -13,6 +13,9 @@
  */
 package com.tikal.hudson.plugins.notification.model;
 
+import com.thoughtworks.xstream.annotations.XStreamAlias;
+
+@XStreamAlias("job")
 public class JobState {
 
 	private String name;

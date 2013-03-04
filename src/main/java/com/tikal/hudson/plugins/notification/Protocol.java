@@ -13,13 +13,6 @@
  */
 package com.tikal.hudson.plugins.notification;
 
-import hudson.EnvVars;
-import hudson.model.AbstractBuild;
-import hudson.model.Hudson;
-import hudson.model.Job;
-import hudson.model.ParameterValue;
-import hudson.model.ParametersAction;
-import hudson.model.Run;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,13 +26,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URL;
 
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.tikal.hudson.plugins.notification.model.BuildState;
-import com.tikal.hudson.plugins.notification.model.JobState;
-
-@SuppressWarnings("rawtypes")
 public enum Protocol {
 
 	UDP {
@@ -124,43 +110,6 @@ public enum Protocol {
 			}
 		}
 	};
-
-	private Gson gson = new GsonBuilder().setFieldNamingPolicy(
-			FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-
-	public void sendNotification(String url, Job job, Run run, Phase phase, String status) throws IOException {
-		send(url, buildMessage(job, run, phase, status));
-	}
-
-	private byte[] buildMessage(Job job, Run run, Phase phase, String status) {
-		JobState jobState = new JobState();
-		jobState.setName(job.getName());
-		jobState.setUrl(job.getUrl());
-		BuildState buildState = new BuildState();
-		buildState.setNumber(run.number);
-		buildState.setUrl(run.getUrl());
-		buildState.setPhase(phase);
-		buildState.setStatus(status);
-
-		String rootUrl = Hudson.getInstance().getRootUrl();
-		if (rootUrl != null) {
-			buildState.setFullUrl(rootUrl + run.getUrl());
-		}
-
-		jobState.setBuild(buildState);
-
-		ParametersAction paramsAction = run.getAction(ParametersAction.class);
-		if (paramsAction != null && run instanceof AbstractBuild) {
-			AbstractBuild build = (AbstractBuild) run;
-			EnvVars env = new EnvVars();
-			for (ParameterValue value : paramsAction.getParameters())
-				if (!value.isSensitive())
-					value.buildEnvVars(build, env);
-			buildState.setParameters(env);
-		}
-
-		return gson.toJson(jobState).getBytes();
-	}
 
 	abstract protected void send(String url, byte[] data) throws IOException;
 

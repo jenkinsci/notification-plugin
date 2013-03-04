@@ -22,13 +22,15 @@ import org.kohsuke.stapler.QueryParameter;
 public class Endpoint {
 
 	private Protocol protocol;
+	private Format format;
 
 	private String url;
 
 	@DataBoundConstructor
-	public Endpoint(Protocol protocol, String url) {
+	public Endpoint(Protocol protocol, String url, Format format) {
 		this.protocol = protocol;
 		this.url = url;
+		this.format = format;
 	}
 
 	public Protocol getProtocol() {
@@ -45,6 +47,14 @@ public class Endpoint {
 
 	public void setUrl(String url) {
 		this.url = url;
+	}
+	
+	public Format getFormat() {
+		return format;
+	}
+	
+	public void setFormat(Format format) {
+		this.format = format;
 	}
 
 	public FormValidation doCheckURL(@QueryParameter(value = "url", fixEmpty = true) String url) {
