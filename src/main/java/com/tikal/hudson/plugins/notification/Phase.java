@@ -19,6 +19,7 @@ import hudson.model.Hudson;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
@@ -32,13 +33,13 @@ import com.tikal.hudson.plugins.notification.model.JobState;
 public enum Phase {
 	STARTED, COMPLETED, FINISHED;
 
-	public void handlePhase(Run run, String status, TaskListener listener) {
+	public void handle(Run run, TaskListener listener) {
 		HudsonNotificationProperty property = (HudsonNotificationProperty) run.getParent().getProperty(HudsonNotificationProperty.class);
 		if (property != null) {
 			List<Endpoint> targets = property.getEndpoints();
 			for (Endpoint target : targets) {
                 try {
-                    JobState jobState = buildJobState(run.getParent(), run, this, status);
+                    JobState jobState = buildJobState(run.getParent(), run, this);
 					target.getProtocol().send(target.getUrl(), target.getOutput().serialize(jobState));
                 } catch (IOException e) {
                     e.printStackTrace(listener.error("Failed to notify "+target));
@@ -47,7 +48,7 @@ public enum Phase {
 		}
 	}
 	
-	private JobState buildJobState(Job job, Run run, Phase phase, String status) {
+	private JobState buildJobState(Job job, Run run, Phase phase) {
 		JobState jobState = new JobState();
 		jobState.setName(job.getName());
 		jobState.setUrl(job.getUrl());
@@ -55,7 +56,7 @@ public enum Phase {
 		buildState.setNumber(run.number);
 		buildState.setUrl(run.getUrl());
 		buildState.setPhase(phase);
-		buildState.setStatus(status);
+		buildState.setStatus(getStatus(run));
 
 		String rootUrl = Hudson.getInstance().getRootUrl();
 		if (rootUrl != null) {
@@ -75,5 +76,14 @@ public enum Phase {
 		}
 		
 		return jobState;
+	}
+	
+	private String getStatus(Run r) {
+		Result result = r.getResult();
+		String status = null;
+		if (result != null) {
+			status = result.toString();
+		}
+		return status;
 	}
 }
