@@ -10,6 +10,16 @@
 						<table>
 							<tr>
 								<td>
+									<f:entry title="Output" description="" field="output">
+										<select class="setting-input" name="output">
+											<f:option value="JSON" selected="${endpoint.output=='JSON'}">JSON</f:option>
+											<f:option value="XML" selected="${endpoint.output=='XML'}">XML</f:option>
+										</select>
+									</f:entry>
+								</td>
+							</tr>
+							<tr>
+								<td>
 									<f:entry title="Protocol" description="" field="protocol">
 										<select class="setting-input" name="protocol">
 											<f:option value="UDP" selected="${endpoint.protocol=='UDP'}">UDP</f:option>
