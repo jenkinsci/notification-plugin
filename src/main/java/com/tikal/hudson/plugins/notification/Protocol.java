@@ -149,6 +149,7 @@ public enum Protocol {
 		buildState.setUrl(run.getUrl());
 		buildState.setPhase(phase);
 		buildState.setStatus(status);
+		buildState.setDisplayName(run.getDisplayName());
 
 		String rootUrl = Hudson.getInstance().getRootUrl();
 		if (rootUrl != null) {
