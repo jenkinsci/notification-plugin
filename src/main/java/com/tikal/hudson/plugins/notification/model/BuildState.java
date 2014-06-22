@@ -13,6 +13,7 @@
  */
 package com.tikal.hudson.plugins.notification.model;
 
+import static com.tikal.hudson.plugins.notification.Utils.*;
 import com.tikal.hudson.plugins.notification.Phase;
 import hudson.model.AbstractBuild;
 import hudson.model.Job;
@@ -23,7 +24,6 @@ import hudson.util.DescribableList;
 import jenkins.model.Jenkins;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,19 @@ public class BuildState {
 
     private Map<String, String> parameters;
 
-    private Map<String, List<String>> artifacts;
+    /**
+     *  Map of artifacts: file name => Map of artifact locations ( location name => artifact URL )
+     *  "artifacts": {
+          "notification.jar": {
+            "archive": "http://localhost:8080/job/notification-plugin/54/artifact/target/notification.jar"
+          },
+          "notification.hpi": {
+            "s3": "https://s3-eu-west-1.amazonaws.com/notification-plugin/jobs/notification-plugin/54/notification.hpi",
+            "archive": "http://localhost:8080/job/notification-plugin/54/artifact/target/notification.hpi"
+          }
+        }
+     */
+    private Map<String, Map<String, String>> artifacts = new HashMap<String, Map<String, String>>();
 
     public int getNumber() {
         return number;
@@ -96,13 +108,8 @@ public class BuildState {
         this.parameters = new HashMap<String, String>( params );
     }
 
-    public Map<String, List<String>> getArtifacts () {
+    public Map<String, Map<String, String>> getArtifacts () {
         return artifacts;
-    }
-
-    public void setArtifacts ( Map<String, List<String>> artifacts )
-    {
-        this.artifacts = new HashMap<String, List<String>>( artifacts );
     }
 
     public void setDisplayName(String displayName) {
@@ -129,8 +136,30 @@ public class BuildState {
      */
     public void updateArtifacts ( Job job, Run run )
     {
-        if ( ! ( run instanceof AbstractBuild )){ return; }
+        updateArchivedArtifacts( run );
+        updateS3Artifacts( job, run );
+    }
+
+
+    private void updateArchivedArtifacts ( Run run )
+    {
+        @SuppressWarnings( "unchecked" )
+        List<Run.Artifact> buildArtifacts = run.getArtifacts();
+
+        if ( buildArtifacts == null ) { return; }
+
+        for ( Run.Artifact a : buildArtifacts ) {
+            String artifactUrl = Jenkins.getInstance().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
+            updateArtifact( a.getFileName(), "archive", artifactUrl );
+        }
+    }
+
+
+    private void updateS3Artifacts ( Job job, Run run )
+    {
         if ( Jenkins.getInstance().getPlugin( "s3" ) == null ) { return; }
+        if ( ! ( run instanceof AbstractBuild )){ return; }
+        if ( isEmpty( job.getName())){ return; }
 
         DescribableList   publishers  = (( AbstractBuild ) run ).getProject().getPublishersList();
         S3BucketPublisher s3Publisher = ( S3BucketPublisher ) publishers.get( S3BucketPublisher.class );
@@ -154,23 +183,32 @@ public class BuildState {
                 // https://s3-eu-west-1.amazonaws.com/evgenyg-temp/notification.hpi
                 String.format( "%s/%s", bucketUrl, fileName );
 
-            if ( artifacts.get( fileName ) == null ) {
-                artifacts.put( fileName, Arrays.asList( fileUrl ));
-            }
-            else {
-                artifacts.get( fileName ).add( fileUrl );
-            }
+            updateArtifact( fileName, "s3", fileUrl );
         }
     }
 
-    private static boolean isEmpty( String ... strings ) {
 
-        for ( String s : strings ) {
-            if (( s == null ) || ( s.trim().length() < 1 )){
-                return true;
-            }
+    /**
+     * Updates an artifact URL.
+     *
+     * @param fileName     artifact file name
+     * @param locationName artifact location name, like "s3" or "archive"
+     * @param locationUrl  artifact URL at the location specified
+     */
+    private void updateArtifact( String fileName, String locationName, String locationUrl )
+    {
+        verifyNotEmpty( fileName, locationName, locationUrl );
+
+        if ( ! artifacts.containsKey( fileName )) {
+            artifacts.put( fileName, new HashMap<String, String>());
         }
 
-        return false;
+        if ( artifacts.get( fileName ).containsKey( locationName )) {
+            throw new RuntimeException( String.format(
+                "Adding artifacts mapping '%s/%s/%s' - artifacts Map already contains mapping of location '%s': %s",
+                fileName, locationName, locationUrl, locationName, artifacts ));
+        }
+
+        artifacts.get( fileName ).put( locationName, locationUrl );
     }
 }

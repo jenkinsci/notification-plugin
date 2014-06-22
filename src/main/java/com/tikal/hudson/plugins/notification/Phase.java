@@ -21,7 +21,7 @@ import hudson.model.*;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
-import java.util.*;
+
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public enum Phase {
@@ -72,7 +72,6 @@ public enum Phase {
         ScmState           scmState     = new ScmState();
         Result             result       = run.getResult();
         ParametersAction   paramsAction = run.getAction(ParametersAction.class);
-        List<Run.Artifact> artifacts    = run.getArtifacts();
         EnvVars            environment  = run.getEnvironment( listener );
 
         jobState.setName( job.getName());
@@ -90,15 +89,6 @@ public enum Phase {
 
         if ( rootUrl != null ) {
             buildState.setFullUrl(rootUrl + run.getUrl());
-        }
-
-        if ( artifacts != null ) {
-            Map<String, List<String>> urls = new HashMap<String, List<String>>( artifacts.size());
-            for ( Run.Artifact a : artifacts ) {
-                final String artifactUrl = jenkins.getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
-                urls.put( a.getFileName(), new ArrayList<String>(){{ add( artifactUrl ); }});
-            }
-            buildState.setArtifacts( urls );
         }
 
         buildState.updateArtifacts( job, run );
