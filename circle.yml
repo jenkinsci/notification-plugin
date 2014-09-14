@@ -1,0 +1,19 @@
+# -----------------------------------------
+# https://circleci.com/docs/configuration
+# https://circleci.com/docs/environment
+# -----------------------------------------
+
+machine:
+  java:
+    version: oraclejdk7
+dependencies:
+  override:
+    - mvn -s settings.xml clean package
+  cache_directories:
+    - ~/.m2
+test:
+  override:
+    - id
+general:
+  artifacts:
+    - target/notification.hpi
