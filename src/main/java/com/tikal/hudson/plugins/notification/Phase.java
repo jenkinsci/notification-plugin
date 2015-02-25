@@ -33,6 +33,8 @@ public enum Phase {
 
         HudsonNotificationProperty property = (HudsonNotificationProperty) run.getParent().getProperty(HudsonNotificationProperty.class);
         if ( property == null ){ return; }
+        
+        EnvVars environment = run.getEnvironment(listener);
 
         for ( Endpoint target : property.getEndpoints()) {
             if ( isRun( target )) {
@@ -40,7 +42,8 @@ public enum Phase {
 
                 try {
                     JobState jobState = buildJobState(run.getParent(), run, listener, target);
-                    target.getProtocol().send(target.getUrl(),
+                    String expandedUrl = environment.expand(target.getUrl());
+                    target.getProtocol().send(expandedUrl,
                                               target.getFormat().serialize(jobState),
                                               target.getTimeout(),
                                               target.isJson());
