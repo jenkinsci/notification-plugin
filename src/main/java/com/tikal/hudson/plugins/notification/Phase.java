@@ -127,7 +127,7 @@ public enum Phase {
         StringBuilder log = new StringBuilder("");
         Integer loglines = target.getLoglines();
 
-        if (null == loglines) {
+        if (null == loglines || 0 == loglines) {
                 return log;
         }
 
