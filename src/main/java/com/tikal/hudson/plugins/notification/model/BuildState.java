@@ -29,6 +29,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Calendar;
+import java.util.TimeZone;
+
 public class BuildState {
 
     private String fullUrl;
@@ -50,6 +56,10 @@ public class BuildState {
     private Map<String, String> parameters;
 
     private StringBuilder log;
+
+    private String timestamp;
+
+    private Long duration;
 
     /**
      *  Map of artifacts: file name => Map of artifact locations ( location name => artifact URL )
@@ -148,6 +158,34 @@ public class BuildState {
     public void setLog(StringBuilder log) {
         this.log = log;
     }
+
+    public void setDuration(Long duration) {
+        this.duration = duration;
+    }
+
+    public Long getDuration() {
+        return duration;
+    }
+
+    public void setTimestamp(Calendar timestamp) {
+        this.timestamp = getTimestampStr(timestamp);
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    private String getTimestampStr(Calendar timestamp) {
+        SimpleDateFormat df = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.Sz" );
+        TimeZone tz = TimeZone.getTimeZone( "UTC" );
+        df.setTimeZone( tz );
+        String output = df.format( timestamp.getTime() );
+        String result = output.replaceAll( "UTC", "+00:00" );
+        
+        return result;
+
+    }
+
 
     /**
      * Updates artifacts Map with S3 links, if corresponding publisher is available.
