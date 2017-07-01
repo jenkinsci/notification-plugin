@@ -98,9 +98,11 @@ public enum Phase {
         buildState.setTimestamp( timestamp );
         buildState.setScm( scmState );
         buildState.setLog( log );
+        buildState.setTimestamp( run.getTimestamp() );
 
         if ( result != null ) {
             buildState.setStatus(result.toString());
+            buildState.setDuration( run.getDuration() );
         }
 
         if ( rootUrl != null ) {
