@@ -50,6 +50,7 @@ public enum Protocol {
     HTTP {
         @Override
         protected void send(String url, byte[] data, int timeout, boolean isJson) throws IOException {
+
             URL targetUrl = new URL(url);
             if (!targetUrl.getProtocol().startsWith("http")) {
               throw new IllegalArgumentException("Not an http(s) url: " + url);
@@ -66,12 +67,12 @@ public enum Protocol {
             }
 
             Proxy proxy = Proxy.NO_PROXY;
-            if (proxyUrl != null) {
-              // Proxy connection to the address provided
-              final int proxyPort = proxyUrl.getPort() > 0 ? proxyUrl.getPort() : 80;
-              proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyUrl.getHost(), proxyPort));
-            } else if (Jenkins.getInstance() != null && Jenkins.getInstance().proxy != null) {
-              proxy = Jenkins.getInstance().proxy.createProxy(targetUrl.getHost());
+            if (Jenkins.getInstance() != null && Jenkins.getInstance().proxy != null) {
+		    proxy = Jenkins.getInstance().proxy.createProxy(targetUrl.getHost());
+            } else if (proxyUrl != null) {
+		    // Proxy connection to the address provided
+		    final int proxyPort = proxyUrl.getPort() > 0 ? proxyUrl.getPort() : 80;
+		    proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyUrl.getHost(), proxyPort));
             }
 
             HttpURLConnection connection = (HttpURLConnection) targetUrl.openConnection(proxy);
