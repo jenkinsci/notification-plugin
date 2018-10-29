@@ -31,10 +31,6 @@ public class Endpoint {
     private Format format = Format.JSON;
     
     private UrlInfo urlInfo;
-    
-    // For backwards compatbility
-    @Deprecated
-    private transient String url;
 
     private String event = "all";
 
@@ -57,12 +53,12 @@ public class Endpoint {
      */
     @Deprecated
     public Endpoint(Protocol protocol, String url, String event, Format format, Integer timeout, Integer loglines) {
-        setProtocol( protocol );
-        setUrlInfo( new UrlInfo(UrlType.PUBLIC, url) );
-        setEvent( event );
-        setFormat( format );
-        setTimeout( timeout );
-        setLoglines( loglines );
+        this.protocol = protocol;
+        this.urlInfo = new UrlInfo(UrlType.PUBLIC, url);
+        this.event = event;
+        this.format = format;
+        this.timeout = timeout;
+        this.loglines = loglines;
     }
     
     /**
@@ -86,7 +82,7 @@ public class Endpoint {
     }
 
     public int getTimeout() {
-        return timeout == null ? DEFAULT_TIMEOUT : timeout;
+        return this.timeout;
     }
 
     /**
@@ -182,14 +178,6 @@ public class Endpoint {
     @DataBoundSetter
     public void setRetries(Integer retries) {
         this.retries = retries;
-    }
-    
-    protected Object readResolve() {
-        if (url != null) {
-           // Upgrade, this is a public URL
-           this.urlInfo = new UrlInfo(UrlType.PUBLIC, url);
-        }
-        return this;
     }
 
     @Override
