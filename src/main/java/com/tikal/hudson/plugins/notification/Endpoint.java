@@ -82,7 +82,7 @@ public class Endpoint {
     }
 
     public int getTimeout() {
-        return this.timeout;
+        return timeout == null ? DEFAULT_TIMEOUT : timeout;
     }
 
     /**
