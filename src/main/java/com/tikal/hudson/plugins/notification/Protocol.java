@@ -16,7 +16,6 @@ package com.tikal.hudson.plugins.notification;
 
 import jenkins.model.Jenkins;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.*;
@@ -78,7 +77,7 @@ public enum Protocol {
             connection.setRequestProperty("Content-Type", String.format( "application/%s;charset=UTF-8", isJson ? "json" : "xml" ));
             String userInfo = targetUrl.getUserInfo();
             if (null != userInfo) {
-              String b64UserInfo = DatatypeConverter.printBase64Binary(userInfo.getBytes());
+              String b64UserInfo = new String(userInfo.getBytes());
               String authorizationHeader = "Basic " + b64UserInfo;
               connection.setRequestProperty("Authorization", authorizationHeader);
             }

@@ -37,7 +37,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -64,7 +63,7 @@ public class ProtocolTest extends TestCase {
       String auth = request.getHeader("Authorization");
       this.userInfo = (null == auth)
               ? null
-              : new String(DatatypeConverter.parseBase64Binary(auth.split(" ")[1])) + "@";
+              : auth.split(" ")[1] + "@";
     }
 
     Request(String url, String method, String body) {
