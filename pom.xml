@@ -16,6 +16,17 @@
     </parent>
 
     <properties>
+<<<<<<< HEAD
+=======
+        <jenkins.version>1.642.3</jenkins.version>
+        <java.level>8</java.level>
+        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+        <!--  overriding old version from parent to be consistent with the above in this project -->
+        <maven-surefire-report-plugin.version>${maven-surefire-plugin.version}</maven-surefire-report-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven-javadoc-plugin.version>2.8</maven-javadoc-plugin.version>
+>>>>>>> b833708dc9bbe5e916e84ca4fcf76f73b9dde106
         <findbugs.failOnError>false</findbugs.failOnError>
     </properties>
 
