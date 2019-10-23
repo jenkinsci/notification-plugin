@@ -243,6 +243,7 @@ public enum Phase {
             // Catching Throwable here because the TokenMacro plugin is optional
             // so will throw a ClassDefNotFoundError if the plugin is not installed or disabled.
             listener.getLogger().println("Failed to evaluate macro '" + text + "'");
+            listener.getLogger().println(e);
         }
 
         return result;
