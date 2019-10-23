@@ -19,7 +19,9 @@ import com.tikal.hudson.plugins.notification.model.ScmState;
 import com.tikal.hudson.plugins.notification.model.TestState;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.AbstractBuild;
+import hudson.model.Executor;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
@@ -242,7 +244,13 @@ public enum Phase {
 
         String result = text;
         try {
-            result = TokenMacro.expandAll((AbstractBuild<?, ?>) build, listener, text);
+            Executor executor = build.getExecutor();
+            if(executor != null) {
+                FilePath workspace = executor.getCurrentWorkspace();
+                if(workspace != null) {
+                    result = TokenMacro.expandAll(build, workspace, listener, text);
+                }
+            }
         } catch (Throwable e) {
             // Catching Throwable here because the TokenMacro plugin is optional
             // so will throw a ClassDefNotFoundError if the plugin is not installed or disabled.
