@@ -38,6 +38,8 @@ public class BuildState {
 
     private long timestamp;
 
+    private long duration;
+
     private Phase phase;
 
     private String status;
@@ -93,6 +95,14 @@ public class BuildState {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 
     public Phase getPhase() {

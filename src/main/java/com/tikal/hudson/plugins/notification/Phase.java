@@ -194,6 +194,7 @@ public enum Phase {
         buildState.setUrl( run.getUrl());
         buildState.setPhase( this );
         buildState.setTimestamp( timestamp );
+        buildState.setDuration( run.getDuration() );
         buildState.setScm( scmState );
         buildState.setLog( log );
         buildState.setNotes(resolveMacros(run, listener, target.getBuildNotes()));
