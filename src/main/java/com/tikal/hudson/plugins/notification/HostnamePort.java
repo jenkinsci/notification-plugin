@@ -36,7 +36,7 @@ public class HostnamePort {
                 return null;
             }
             String hostname = result.group(1);
-            int port = Integer.valueOf(result.group(2));
+            int port = Integer.parseInt(result.group(2));
             return new HostnamePort(hostname, port);
         } catch (Exception e) {
             return null;

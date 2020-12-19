@@ -50,6 +50,9 @@ public enum Phase {
         Run previousRun = run.getPreviousCompletedBuild();
         while(previousRun != null){
 	        Result previousResults = previousRun.getResult();
+	        if (previousResults == null) {
+	            throw new IllegalStateException("Previous result can't be null here");
+            }
         	if (previousResults.equals(Result.SUCCESS) || previousResults.equals(Result.FAILURE) || previousResults.equals(Result.UNSTABLE)){
 	        	return previousResults;
 	        }

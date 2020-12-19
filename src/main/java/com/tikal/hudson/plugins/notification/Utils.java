@@ -75,10 +75,6 @@ public final class Utils
             return null;
         }
         Secret secretUrl = creds.getSecret();
-        if (secretUrl != null) {
-            return secretUrl.getPlainText();
-        }
-        
-        return "";
+        return secretUrl.getPlainText();
     }
 }

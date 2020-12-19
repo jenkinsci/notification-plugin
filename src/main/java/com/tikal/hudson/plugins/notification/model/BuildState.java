@@ -198,8 +198,6 @@ public class BuildState {
         @SuppressWarnings( "unchecked" )
         List<Run.Artifact> buildArtifacts = run.getArtifacts();
 
-        if ( buildArtifacts == null ) { return; }
-
         for ( Run.Artifact a : buildArtifacts ) {
             String artifactUrl = Jenkins.getInstance().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
             updateArtifact( a.relativePath, "archive", artifactUrl );

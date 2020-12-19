@@ -23,7 +23,7 @@ import java.io.IOException;
 
 public enum Format {
     XML {
-        private final XStream xstream = new XStream();
+        private transient final XStream xstream = new XStream();
 
         @Override
         protected byte[] serialize(JobState jobState) throws IOException {
@@ -32,7 +32,7 @@ public enum Format {
         }
     },
     JSON {
-        private final Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+        private transient final Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
 
         @Override
         protected byte[] serialize(JobState jobState) throws IOException {
