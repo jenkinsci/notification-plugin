@@ -26,11 +26,11 @@ package com.tikal.hudson.plugins.notification;
 import com.google.common.base.Objects;
 import com.google.common.io.CharStreams;
 import junit.framework.TestCase;
-import org.mortbay.jetty.HttpHeaders;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.servlet.ServletHandler;
-import org.mortbay.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -151,7 +151,7 @@ public class ProtocolTest extends TestCase {
     @Override
     protected void doPost(Request request, HttpServletResponse httpResponse) throws IOException {
       httpResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-      httpResponse.setHeader(HttpHeaders.LOCATION, redirectURI);
+      httpResponse.setHeader("Location", redirectURI);
     }
   }
 
@@ -166,16 +166,13 @@ public class ProtocolTest extends TestCase {
   }
 
   private UrlFactory startSecureServer(Servlet servlet, String path, String authority) throws Exception {
-    SocketConnector connector = new SocketConnector();
-    connector.setPort(0);
-    connector.open();
-
     Server server = new Server();
-    server.addConnector(connector);
+    ServerConnector connector = new ServerConnector(server);
+    server.setConnectors(new Connector[] {connector});
 
     ServletHandler servletHandler = new ServletHandler();
+    server.setHandler(servletHandler);
     servletHandler.addServletWithMapping(new ServletHolder(servlet), path);
-    server.addHandler(servletHandler);
 
     server.start();
     servers.add(server);
@@ -198,7 +195,7 @@ public class ProtocolTest extends TestCase {
 
   @Override
   public void setUp() throws Exception {
-    servers = new LinkedList<Server>();
+    servers = new LinkedList<>();
   }
 
   @Override
