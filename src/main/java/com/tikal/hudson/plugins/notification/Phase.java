@@ -342,8 +342,8 @@ public enum Phase {
                         continue;
                     }
 
-                    if (!manual && environment.containsKey("BRANCH_NAME") && environment.get("BRANCH_NAME").matches(target.getBranch())) {
-                        listener.getLogger().printf("Environment variable %s with value %s does not matches configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), target.getBranch());
+                    if (!manual && environment.containsKey("BRANCH_NAME") && !environment.get("BRANCH_NAME").matches(target.getBranch())) {
+                        listener.getLogger().printf("Environment variable %s with value %s does not match configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), target.getBranch());
                         continue;
                     }else if(!manual && !environment.containsKey("BRANCH_NAME") && !target.getBranch().equals(".*")){
                         listener.getLogger().printf("Environment does not contains %s variable%n", "BRANCH_NAME");
