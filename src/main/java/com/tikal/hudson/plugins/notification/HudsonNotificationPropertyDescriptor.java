@@ -17,7 +17,6 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.AbstractIdCredentialsListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Item;
@@ -40,6 +39,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 @Extension
 public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescriptor {
 
@@ -48,7 +49,7 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
         load();
     }
 
-    private List<Endpoint> endpoints = new ArrayList<Endpoint>();
+    private List<Endpoint> endpoints = new ArrayList<>();
 
     public boolean isEnabled() {
         return !endpoints.isEmpty();
@@ -59,17 +60,22 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
     }
 
     public void setEndpoints(List<Endpoint> endpoints) {
-        this.endpoints = new ArrayList<Endpoint>( endpoints );
+        this.endpoints = new ArrayList<>(endpoints);
     }
 
     @Override
-    public boolean isApplicable(@SuppressWarnings("rawtypes") Class<? extends Job> jobType) {
+    public boolean isApplicable(Class<? extends Job> jobType) {
         return true;
     }
 
+    @Nonnull
     @Override
     public String getDisplayName() {
         return "Hudson Job Notification";
+    }
+
+    public String getDefaultBranch(){
+        return Endpoint.DEFAULT_BRANCH;
     }
 
     public int getDefaultTimeout(){
@@ -82,7 +88,7 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
 
     @Override
     public HudsonNotificationProperty newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-        List<Endpoint> endpoints = new ArrayList<Endpoint>();
+        List<Endpoint> endpoints = new ArrayList<>();
         if (formData != null && !formData.isNullObject()) {
             JSON endpointsData = (JSON) formData.get("endpoints");
             if (endpointsData != null && !endpointsData.isEmpty()) {
@@ -90,21 +96,21 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
                     JSONArray endpointsArrayData = (JSONArray) endpointsData;
                     for (int i = 0; i < endpointsArrayData.size(); i++) {
                         JSONObject endpointsObject = endpointsArrayData.getJSONObject(i);
-                        endpoints.add(convertJson((JSONObject) endpointsObject));
+                        endpoints.add(convertJson(endpointsObject));
                     }
                 } else {
                     endpoints.add(convertJson((JSONObject) endpointsData));
                 }
             }
         }
-        HudsonNotificationProperty notificationProperty = new HudsonNotificationProperty(endpoints);
-        return notificationProperty;
+
+        return new HudsonNotificationProperty(endpoints);
     }
     
     private Endpoint convertJson(JSONObject endpointObjectData) throws FormException {
         // Transform the data to get the public/secret URL data
         JSONObject urlInfoData = endpointObjectData.getJSONObject("urlInfo");
-        UrlInfo urlInfo = null;
+        UrlInfo urlInfo;
         if (urlInfoData.containsKey("publicUrl")) {
             urlInfo = new UrlInfo(UrlType.PUBLIC, urlInfoData.getString("publicUrl"));
         }
@@ -114,6 +120,7 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
         else {
             throw new FormException("Expected either a public url or secret url id", "urlInfo");
         }
+
         Endpoint endpoint = new Endpoint(urlInfo);
         endpoint.setEvent(endpointObjectData.getString("event"));
         endpoint.setFormat(Format.valueOf(endpointObjectData.getString("format")));
@@ -122,6 +129,8 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
         endpoint.setRetries(endpointObjectData.getInt("retries"));
         endpoint.setLoglines(endpointObjectData.getInt("loglines"));
         endpoint.setBuildNotes(endpointObjectData.getString("notes"));
+        endpoint.setBranch(endpointObjectData.getString("branch"));
+
         return endpoint;
     }
     
@@ -170,10 +179,10 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
         // as we cannot select from a user's credentials unless they are the only user submitting the build
         // (which we cannot assume) thus ACL.SYSTEM is correct here.
         AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> model = new StandardListBoxModel()
-                .withEmptySelection()
+                .includeEmptyValue()
                 .withAll(
                     CredentialsProvider.lookupCredentials(
-                        StringCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+                        StringCredentials.class, owner, ACL.SYSTEM, Collections.emptyList()));
         if (!StringUtils.isEmpty(secretUrl)) {
             // Select current value, add if missing
             for (ListBoxModel.Option option : model) {
@@ -192,5 +201,4 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
         save();
         return true;
     }
-
 }

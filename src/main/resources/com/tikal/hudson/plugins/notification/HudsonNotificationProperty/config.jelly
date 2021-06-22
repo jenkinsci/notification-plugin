@@ -41,6 +41,7 @@
                                             <f:option value="finalized" selected="${endpoint.event == 'finalized'}">Job Finalized</f:option>
                                             <f:option value="failed"	selected="${endpoint.event == 'failed'}">Job Failed</f:option>
                                             <f:option value="failedAndFirstSuccess"	selected="${endpoint.event == 'failedAndFirstSuccess'}">Job Failed and First Success</f:option>
+                                            <f:option value="manual"	selected="${endpoint.event == 'manual'}">No Events - Call manually</f:option>
                                         </select>
                                     </f:entry>
                                 </p:cellWrapper>
@@ -88,6 +89,14 @@
                                     <f:entry title="Notes" description="Additional detail about the build to include in message."
                                         field="notes">
                                         <f:textbox name="notes" value="${endpoint.buildNotes}" default="" />
+                                    </f:entry>
+                                </p:cellWrapper>
+                            </p:rowWrapper>
+                            <p:rowWrapper>
+                                <p:cellWrapper>
+                                    <f:entry title="Branch" description="Notify on matching branches only."
+                                        field="branch">
+                                        <f:textbox name="branch" value="${endpoint.branch}" default=".*" />
                                     </f:entry>
                                 </p:cellWrapper>
                             </p:rowWrapper>

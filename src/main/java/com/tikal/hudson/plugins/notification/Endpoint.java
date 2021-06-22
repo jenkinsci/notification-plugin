@@ -23,6 +23,8 @@ public class Endpoint {
     
     public static final Integer DEFAULT_RETRIES = 0;
 
+    public static final String DEFAULT_BRANCH = ".*";
+
     private Protocol protocol = Protocol.HTTP;
     
     /**
@@ -45,6 +47,8 @@ public class Endpoint {
     private String buildNotes;
     
     private Integer retries = DEFAULT_RETRIES;
+
+    private String branch = ".*";
 
     /**
      * Adds a new endpoint for notifications
@@ -190,6 +194,19 @@ public class Endpoint {
            this.urlInfo = new UrlInfo(UrlType.PUBLIC, url);
         }
         return this;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    /**
+     * Sets branch filter
+     * @param branch - regex
+     */
+    @DataBoundSetter
+    public void setBranch(final String branch) {
+        this.branch = branch;
     }
 
     @Override

@@ -39,12 +39,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public enum Phase {
-    QUEUED, STARTED, COMPLETED, FINALIZED;
+    QUEUED, STARTED, COMPLETED, FINALIZED, NONE;
 
 	private Result findLastBuildThatFinished(Run run){
         Run previousRun = run.getPreviousCompletedBuild();
@@ -63,63 +64,7 @@ public enum Phase {
 
     @SuppressWarnings( "CastToConcreteClass" )
     public void handle(Run run, TaskListener listener, long timestamp) {
-
-        HudsonNotificationProperty property = (HudsonNotificationProperty) run.getParent().getProperty(HudsonNotificationProperty.class);
-        if ( property == null ){ return; }
-
-        Result previousCompletedRunResults = findLastBuildThatFinished(run);
-
-        for ( Endpoint target : property.getEndpoints()) {
-            if (isRun(target, run.getResult(), previousCompletedRunResults) && !Utils.isEmpty(target.getUrlInfo().getUrlOrId())) {
-                int triesRemaining = target.getRetries();
-                boolean failed = false;
-                do {
-                    // Represents a string that will be put into the log
-                    // if there is an error contacting the target.
-                    String urlIdString = "url 'unknown'";
-                    try {
-                        EnvVars environment = run.getEnvironment(listener);
-                        // Expand out the URL from environment + url.
-                        String expandedUrl;
-                        UrlInfo urlInfo = target.getUrlInfo();
-                        switch (urlInfo.getUrlType()) {
-                            case PUBLIC:
-                                expandedUrl = environment.expand(urlInfo.getUrlOrId());
-                                urlIdString = String.format("url '%s'", expandedUrl);
-                                break;
-                            case SECRET:
-                                String urlSecretId = urlInfo.getUrlOrId();
-                                String actualUrl = Utils.getSecretUrl(urlSecretId);
-                                expandedUrl = environment.expand(actualUrl);
-                                urlIdString = String.format("credentials id '%s'", urlSecretId);
-                                break;
-                            default:
-                                throw new UnsupportedOperationException("Unknown URL type");
-                        }
-
-                        if(! isURLValid(urlIdString, expandedUrl, listener.getLogger())){
-                            return;
-                        }
-
-                        listener.getLogger().println( String.format( "Notifying endpoint with %s", urlIdString));
-                        JobState jobState = buildJobState(run.getParent(), run, listener, timestamp, target);
-                        target.getProtocol().send(expandedUrl,
-                                                  target.getFormat().serialize(jobState),
-                                                  target.getTimeout(),
-                                                  target.isJson());
-                    } catch (Throwable error) {
-                        failed = true;
-                        error.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", urlIdString)));
-                        listener.getLogger().println( String.format( "Failed to notify endpoint with %s - %s: %s",
-                                                                     urlIdString, error.getClass().getName(), error.getMessage()));
-                        if (triesRemaining > 0) {
-                            listener.getLogger().println( String.format( "Reattempting to notify endpoint with %s (%d tries remaining)", urlIdString, triesRemaining));
-                        }
-                    }
-                }
-                while (failed && --triesRemaining >= 0);
-            }
-        }
+	    handle(run, listener, timestamp, false, null, 0, this);
     }
 
     /**
@@ -134,7 +79,7 @@ public enum Phase {
         boolean isValid= false;
         //If Jenkins variable was used for URL, and it was unresolvable, log warning and return.
         if (expandedUrl.contains("$")) {
-            logger.println( String.format( "Ignoring sending notification due to unresolved variable: %s", urlInputValue));
+            logger.printf("Ignoring sending notification due to unresolved variable: %s%n", urlInputValue);
         }else if(StringUtils.isBlank(expandedUrl)){
             logger.println("URL is not set, ignoring call to send notification.");
         }else{
@@ -163,18 +108,21 @@ public enum Phase {
         case "failedAndFirstSuccess":
         	if (result == null || !this.equals(FINALIZED)) {return false;}
         	if (result.equals(Result.FAILURE)) {return true;}
-        	if (previousRunResult != null && result.equals(Result.SUCCESS) && previousRunResult.equals(Result.FAILURE)) {return true;}
-        	return false;
+            return previousRunResult != null && result.equals(Result.SUCCESS)
+                && previousRunResult.equals(Result.FAILURE);
+            case "manual":
+          return false;
         default:
         	return event.equals(this.toString().toLowerCase());
         }
     }
 
-    private JobState buildJobState(Job job, Run run, TaskListener listener, long timestamp, Endpoint target)
+    private JobState buildJobState(Job job, Run run, TaskListener listener, long timestamp, Endpoint target, Phase phase)
         throws IOException, InterruptedException
     {
+        Jenkins            jenkins      = Jenkins.getInstanceOrNull();
+        assert jenkins != null;
 
-        Jenkins            jenkins      = Jenkins.getInstance();
         String             rootUrl      = jenkins.getRootUrl();
         JobState           jobState     = new JobState();
         BuildState         buildState   = new BuildState();
@@ -192,7 +140,7 @@ public enum Phase {
         buildState.setNumber( run.number );
         buildState.setQueueId( run.getQueueId() );
         buildState.setUrl( run.getUrl());
-        buildState.setPhase( this );
+        buildState.setPhase( phase );
         buildState.setTimestamp( timestamp );
         buildState.setDuration( run.getDuration() );
         buildState.setScm( scmState );
@@ -210,6 +158,7 @@ public enum Phase {
 
         buildState.updateArtifacts( job, run );
 
+        //TODO: Make this optional to reduce chat overload.
         if ( paramsAction != null ) {
             EnvVars env = new EnvVars();
             for (ParameterValue value : paramsAction.getParameters()){
@@ -320,7 +269,7 @@ public enum Phase {
     }
 
     private StringBuilder getLog(Run run, Endpoint target) {
-        StringBuilder log = new StringBuilder("");
+        StringBuilder log = new StringBuilder();
         Integer loglines = target.getLoglines();
 
         if (loglines == null || loglines == 0) {
@@ -328,21 +277,97 @@ public enum Phase {
         }
 
         try {
-            switch (loglines) {
-                // The full log
-                case -1:
-                    log.append(run.getLog());
-                    break;
-                default:
-                    List<String> logEntries = run.getLog(loglines);
-                    for (String entry: logEntries) {
-                        log.append(entry);
-                        log.append("\n");
-                    }
+            // The full log
+            if (loglines == -1) {
+                log.append(run.getLog());
+            } else {
+                List<String> logEntries = run.getLog(loglines);
+                for (String entry : logEntries) {
+                    log.append(entry);
+                    log.append("\n");
+                }
             }
         } catch (IOException e) {
             log.append("Unable to retrieve log");
         }
         return log;
+    }
+
+    public void handle(Run run, TaskListener listener, long timestamp, boolean manual, final String buildNotes, final Integer logLines, Phase phase) {
+        HudsonNotificationProperty property = (HudsonNotificationProperty) run.getParent().getProperty(HudsonNotificationProperty.class);
+        if ( property == null ){ return; }
+
+        Result previousCompletedRunResults = findLastBuildThatFinished(run);
+
+        for ( Endpoint target : property.getEndpoints()) {
+            if ((!manual && !isRun(target, run.getResult(), previousCompletedRunResults)) || Utils.isEmpty(target.getUrlInfo().getUrlOrId())) {
+                continue;
+            }
+
+            if(Objects.nonNull(buildNotes)) {
+                target.setBuildNotes(buildNotes);
+            }
+
+            if(Objects.nonNull(logLines) && logLines != 0) {
+                target.setLoglines(logLines);
+            }
+
+            int triesRemaining = target.getRetries();
+            boolean failed = false;
+            do {
+                // Represents a string that will be put into the log
+                // if there is an error contacting the target.
+                String urlIdString = "url 'unknown'";
+                try {
+                    EnvVars environment = run.getEnvironment(listener);
+                    // Expand out the URL from environment + url.
+                    String expandedUrl;
+                    UrlInfo urlInfo = target.getUrlInfo();
+                    switch (urlInfo.getUrlType()) {
+                        case PUBLIC:
+                            expandedUrl = environment.expand(urlInfo.getUrlOrId());
+                            urlIdString = String.format("url '%s'", expandedUrl);
+                            break;
+                        case SECRET:
+                            String urlSecretId = urlInfo.getUrlOrId();
+                            String actualUrl = Utils.getSecretUrl(urlSecretId);
+                            expandedUrl = environment.expand(actualUrl);
+                            urlIdString = String.format("credentials id '%s'", urlSecretId);
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unknown URL type");
+                    }
+
+                    if (!isURLValid(urlIdString, expandedUrl, listener.getLogger())) {
+                        continue;
+                    }
+
+                    if (!manual && environment.containsKey("BRANCH_NAME") && environment.get("BRANCH_NAME").matches(target.getBranch())) {
+                        listener.getLogger().printf("Environment variable %s with value %s does not matches configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), target.getBranch());
+                        continue;
+                    }else if(!manual && !environment.containsKey("BRANCH_NAME") && !target.getBranch().equals(".*")){
+                        listener.getLogger().printf("Environment does not contains %s variable%n", "BRANCH_NAME");
+                        continue;
+                    }
+
+                    listener.getLogger().printf("Notifying endpoint with %s%n", urlIdString);
+                    JobState jobState = buildJobState(run.getParent(), run, listener, timestamp, target, phase);
+                    target.getProtocol().send(expandedUrl,
+                        target.getFormat().serialize(jobState),
+                        target.getTimeout(),
+                        target.isJson());
+                } catch (Throwable error) {
+                    failed = true;
+                    error.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", urlIdString)));
+                    listener.getLogger().printf("Failed to notify endpoint with %s - %s: %s%n",
+                        urlIdString, error.getClass().getName(), error.getMessage());
+                    if (triesRemaining > 0) {
+                        listener.getLogger().printf(
+                            "Reattempting to notify endpoint with %s (%d tries remaining)%n", urlIdString, triesRemaining);
+                    }
+                }
+            }
+            while (failed && --triesRemaining >= 0);
+        }
     }
 }
