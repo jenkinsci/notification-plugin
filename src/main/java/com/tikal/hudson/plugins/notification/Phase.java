@@ -33,13 +33,13 @@ import hudson.tasks.test.AbstractTestResultAction;
 import hudson.tasks.test.TestResult;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 
@@ -243,7 +243,9 @@ public enum Phase {
 
         String result = text;
         try {
-            FilePath workspace = build.getExecutor().getCurrentWorkspace();
+            FilePath workspace = Optional.ofNullable(build.getExecutor())
+                .orElseThrow(() -> new IllegalStateException("Failed to obtained executor of this run"))
+                .getCurrentWorkspace();
             if ( workspace != null ) {
                 result = TokenMacro.expandAll(build, workspace, listener, text);
             }
