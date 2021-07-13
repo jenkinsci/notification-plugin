@@ -19,7 +19,6 @@ import com.tikal.hudson.plugins.notification.model.ScmState;
 import com.tikal.hudson.plugins.notification.model.TestState;
 
 import hudson.EnvVars;
-import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.Job;
 import hudson.model.ParameterValue;
@@ -33,13 +32,13 @@ import hudson.tasks.test.AbstractTestResultAction;
 import hudson.tasks.test.TestResult;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 
@@ -243,17 +242,11 @@ public enum Phase {
 
         String result = text;
         try {
-            FilePath workspace = Optional.ofNullable(build.getExecutor())
-                .orElseThrow(() -> new IllegalStateException("Failed to obtained executor of this run"))
-                .getCurrentWorkspace();
-            if ( workspace != null ) {
-                result = TokenMacro.expandAll(build, workspace, listener, text);
-            }
+            result = TokenMacro.expandAll((AbstractBuild<?, ?>) build, listener, text);
         } catch (Throwable e) {
             // Catching Throwable here because the TokenMacro plugin is optional
             // so will throw a ClassDefNotFoundError if the plugin is not installed or disabled.
             listener.getLogger().println("Failed to evaluate macro '" + text + "'");
-            listener.getLogger().println(e);
         }
 
         return result;
