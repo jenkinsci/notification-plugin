@@ -16,12 +16,11 @@ package com.tikal.hudson.plugins.notification;
 
 import jenkins.model.Jenkins;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.Charset;
-
+import java.util.Base64;
 
 public enum Protocol {
 
@@ -80,7 +79,7 @@ public enum Protocol {
             connection.setRequestProperty("Content-Type", String.format( "application/%s;charset=UTF-8", isJson ? "json" : "xml" ));
             String userInfo = targetUrl.getUserInfo();
             if (null != userInfo) {
-			  String b64UserInfo = DatatypeConverter.printBase64Binary(userInfo.getBytes(Charset.defaultCharset())); // TODO see if UTF-8 can be used instead of platform default encoding
+			  String b64UserInfo = Base64.getEncoder().encodeToString(userInfo.getBytes(Charset.defaultCharset())); // TODO see if UTF-8 can be used instead of platform default encoding
               String authorizationHeader = "Basic " + b64UserInfo;
               connection.setRequestProperty("Authorization", authorizationHeader);
             }
