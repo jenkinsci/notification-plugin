@@ -20,12 +20,14 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Item;
+import hudson.model.ItemGroup;
 import hudson.model.Job;
 import hudson.model.JobPropertyDescriptor;
 import hudson.security.ACL;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -38,6 +40,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
@@ -151,8 +154,11 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
     private FormValidation checkUrl(String urlOrId, UrlType urlType, Protocol protocol) {
         String actualUrl = urlOrId;
         if (urlType == UrlType.SECRET && !StringUtils.isEmpty(actualUrl)) {
+            actualUrl = Jenkins.get().getItems(ItemGroup.class).stream()
+                    .map(ig -> Utils.getSecretUrl(urlOrId, ig))
+                    .filter(Objects::nonNull)
+                    .findFirst().orElse(null);
             // Get the credentials
-            actualUrl = Utils.getSecretUrl(urlOrId);
             if (actualUrl == null) {
                 return FormValidation.error("Could not find secret text credentials with id " + urlOrId);
             }

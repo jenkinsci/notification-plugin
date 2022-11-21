@@ -3,11 +3,14 @@ package com.tikal.hudson.plugins.notification;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import hudson.model.ItemGroup;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
@@ -63,18 +66,20 @@ public final class Utils
     /**
      * Get the actual URL from the credential id
      * @param credentialId Credential id to lookup
+     * @param itemGroup the item group to look for the credential
      * @return Actual URL
      */
-    public static String getSecretUrl(String credentialId) {
+    public static String getSecretUrl(String credentialId, ItemGroup itemGroup) {
         // Grab the secret text
         StringCredentials creds = CredentialsMatchers.firstOrNull(CredentialsProvider.lookupCredentials(
-            StringCredentials.class, Jenkins.getInstance(), ACL.SYSTEM,
-                Collections.<DomainRequirement>emptyList()),
-            CredentialsMatchers.withId(credentialId));
+                StringCredentials.class, itemGroup, ACL.SYSTEM, Collections.emptyList()),
+                CredentialsMatchers.withId(credentialId));
         if (creds == null) {
             return null;
         }
         Secret secretUrl = creds.getSecret();
-		return secretUrl.getPlainText();
+        return secretUrl.getPlainText();
     }
+
+
 }

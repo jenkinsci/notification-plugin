@@ -302,8 +302,11 @@ public enum Phase {
     }
 
     public void handle(Run run, TaskListener listener, long timestamp, boolean manual, final String buildNotes, final Integer logLines, Phase phase) {
-        HudsonNotificationProperty property = (HudsonNotificationProperty) run.getParent().getProperty(HudsonNotificationProperty.class);
-        if ( property == null ){ return; }
+        final Job job = run.getParent();
+        final HudsonNotificationProperty property = (HudsonNotificationProperty) job.getProperty(HudsonNotificationProperty.class);
+        if ( property == null ) {
+            return;
+        }
 
         Result previousCompletedRunResults = findLastBuildThatFinished(run);
 
@@ -338,7 +341,7 @@ public enum Phase {
                             break;
                         case SECRET:
                             String urlSecretId = urlInfo.getUrlOrId();
-                            String actualUrl = Utils.getSecretUrl(urlSecretId);
+                            String actualUrl = Utils.getSecretUrl(urlSecretId, job.getParent());
                             expandedUrl = environment.expand(actualUrl);
                             urlIdString = String.format("credentials id '%s'", urlSecretId);
                             break;
@@ -350,16 +353,17 @@ public enum Phase {
                         continue;
                     }
 
-                    if (!manual && environment.containsKey("BRANCH_NAME") && !environment.get("BRANCH_NAME").matches(target.getBranch())) {
-                        listener.getLogger().printf("Environment variable %s with value %s does not match configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), target.getBranch());
+                    final String branch = target.getBranch();
+                    if (!manual && environment.containsKey("BRANCH_NAME") && !environment.get("BRANCH_NAME").matches(branch)) {
+                        listener.getLogger().printf("Environment variable %s with value %s does not match configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), branch);
                         continue;
-                    }else if(!manual && !environment.containsKey("BRANCH_NAME") && !target.getBranch().equals(".*")){
-                        listener.getLogger().printf("Environment does not contains %s variable%n", "BRANCH_NAME");
+                    }else if(!manual && !environment.containsKey("BRANCH_NAME") && !".*".equals(branch)){
+                        listener.getLogger().printf("Environment does not contain %s variable%n", "BRANCH_NAME");
                         continue;
                     }
 
                     listener.getLogger().printf("Notifying endpoint with %s%n", urlIdString);
-                    JobState jobState = buildJobState(run.getParent(), run, listener, timestamp, target, phase);
+                    JobState jobState = buildJobState(job, run, listener, timestamp, target, phase);
                     target.getProtocol().send(expandedUrl,
                         target.getFormat().serialize(jobState),
                         target.getTimeout(),
