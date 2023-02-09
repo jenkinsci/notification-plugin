@@ -29,6 +29,8 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.User;
+import hudson.plugins.git.util.Build;
+import hudson.plugins.git.util.BuildData;
 import hudson.scm.ChangeLogSet;
 import hudson.tasks.test.AbstractTestResultAction;
 import hudson.tasks.test.TestResult;
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -170,10 +173,28 @@ public enum Phase {
             }
             buildState.setParameters(env);
         }
+        
+        BuildData build = job.getAction(BuildData.class);
 
+        if ( build != null ) {
+            if ( !build.remoteUrls.isEmpty() ) {
+                String url = build.remoteUrls.iterator().next();
+                if ( url != null ) {
+                    scmState.setUrl( url );
+                }
+            }
+            for (Map.Entry<String, Build> entry : build.buildsByBranchName.entrySet()) {
+                if ( entry.getValue().hudsonBuildNumber == run.number ) {
+                    scmState.setBranch( entry.getKey() );
+                    scmState.setCommit( entry.getValue().revision.getSha1String() );
+                }
+            }
+        }
+        
         if ( environment.get( "GIT_URL" ) != null ) {
             scmState.setUrl( environment.get( "GIT_URL" ));
         }
+        
 
         if ( environment.get( "GIT_BRANCH" ) != null ) {
             scmState.setBranch( environment.get( "GIT_BRANCH" ));
