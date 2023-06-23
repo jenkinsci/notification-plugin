@@ -121,9 +121,7 @@ public enum Phase {
         }
     }
 
-    private JobState buildJobState(final Job job, final Run run, final TaskListener listener, final long timestamp, final Endpoint target, final Phase phase)
-        throws IOException, InterruptedException
-    {
+    private JobState buildJobState(final Job job, final Run run, final TaskListener listener, final long timestamp, final Endpoint target, final Phase phase, final EnvVars environment) {
         final Jenkins            jenkins      = Jenkins.getInstanceOrNull();
         assert jenkins != null;
 
@@ -133,7 +131,6 @@ public enum Phase {
         final ScmState           scmState     = new ScmState();
         final Result             result       = run.getResult();
         final ParametersAction   paramsAction = run.getAction(ParametersAction.class);
-        final EnvVars            environment  = run.getEnvironment( listener );
         final StringBuilder      log          = this.getLog(run, target);
 
         jobState.setName( job.getName());
@@ -342,11 +339,18 @@ public enum Phase {
 
             fixTarget(buildNotes, logLines, target);
 
-            notifyEndpoint(run, listener, timestamp, manual, phase, job, target);
+            try {
+                notifyEndpoint(run, listener, timestamp, manual, phase, job, target);
+            } catch (final InterruptedException | IOException e) {
+                final String targetUrl = target.getUrlInfo().getUrlOrId();
+                e.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", targetUrl)));
+                listener.getLogger().printf("Failed to notify endpoint with %s - %s: %s%n",
+                        targetUrl, e.getClass().getName(), e.getMessage());
+            }
         }
     }
 
-    private void notifyEndpoint(final Run run, final TaskListener listener, final long timestamp, final boolean manual, final Phase phase, final Job job, final Endpoint target) {
+    private void notifyEndpoint(final Run run, final TaskListener listener, final long timestamp, final boolean manual, final Phase phase, final Job job, final Endpoint target) throws IOException, InterruptedException {
         int triesRemaining = target.getRetries();
         boolean failed = false;
         final EnvVars environment = run.getEnvironment(listener);
@@ -382,7 +386,7 @@ public enum Phase {
                 }
 
                 listener.getLogger().printf("Notifying endpoint with %s%n", urlIdString);
-                final JobState jobState = buildJobState(job, run, listener, timestamp, target, phase);
+                final JobState jobState = buildJobState(job, run, listener, timestamp, target, phase, environment);
                 target.getProtocol().send(expandedUrl,
                     target.getFormat().serialize(jobState),
                     target.getTimeout(),
