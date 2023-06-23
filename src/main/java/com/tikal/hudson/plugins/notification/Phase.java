@@ -310,7 +310,7 @@ public enum Phase {
         try {
             // The full log
             if (logLines == -1) {
-                log.append(run.getLog());
+                log.append(run.getLog(128));
             } else {
                 final List<String> logEntries = run.getLog(logLines);
                 for (final String entry : logEntries) {
