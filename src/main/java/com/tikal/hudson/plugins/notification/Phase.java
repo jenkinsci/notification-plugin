@@ -104,18 +104,17 @@ public enum Phase {
         if(event == null || "all".equals(event))
         	return true;
 
-        if(result == null || "manual".equals(event)){
-            return false;
-        }
-
         switch(event){
             case "failed":
+                if (result == null) {return false;}
                 return this.equals(FINALIZED) && result.equals(Result.FAILURE);
             case "failedAndFirstSuccess":
-                if (!this.equals(FINALIZED)) {return false;}
+                if (result == null || !this.equals(FINALIZED)) {return false;}
                 if (result.equals(Result.FAILURE)) {return true;}
                 return previousRunResult != null && result.equals(Result.SUCCESS)
                     && previousRunResult.equals(Result.FAILURE);
+            case "manual":
+                return false;
             default:
                 return event.equals(this.toString().toLowerCase());
         }

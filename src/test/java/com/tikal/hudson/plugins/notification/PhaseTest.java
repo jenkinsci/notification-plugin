@@ -1,25 +1,30 @@
 package com.tikal.hudson.plugins.notification;
 
-import static com.tikal.hudson.plugins.notification.UrlType.PUBLIC;
-import static com.tikal.hudson.plugins.notification.UrlType.SECRET;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import com.tikal.hudson.plugins.notification.model.JobState;
+import hudson.EnvVars;
+import hudson.model.Job;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 
-import com.tikal.hudson.plugins.notification.model.JobState;
-import hudson.EnvVars;
-import hudson.model.*;
-import jenkins.model.Jenkins;
-import org.junit.Test;
-
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import static com.tikal.hudson.plugins.notification.UrlType.PUBLIC;
+import static com.tikal.hudson.plugins.notification.UrlType.SECRET;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PhaseTest {
@@ -48,71 +53,50 @@ public class PhaseTest {
 
   @Test
   public void testIsRun() throws ReflectiveOperationException {
-    Endpoint endPoint = new Endpoint(null);
-    Method isRunMethod = Phase.class.getDeclaredMethod("isRun", Endpoint.class, Result.class, Result.class);
+    final Endpoint endPoint = new Endpoint(null);
+    final Method isRunMethod = Phase.class.getDeclaredMethod("isRun", Endpoint.class, Result.class, Result.class);
     isRunMethod.setAccessible(true);
 
-    assertEquals("returns true for null endpoint event",
-            isRunMethod.invoke(Phase.QUEUED, endPoint, null, null), Boolean.TRUE);
+    assertThat("returns true for null endpoint event", isRunMethod.invoke(Phase.QUEUED, endPoint, null, null), is(TRUE));
 
     endPoint.setEvent("all");
-    for (Phase phaseValue : Phase.values()) {
-      assertEquals("all Event returns true for Phase " + phaseValue.toString(),
-              isRunMethod.invoke(phaseValue, endPoint, null, null), Boolean.TRUE);
+    for (final Phase phaseValue : Phase.values()) {
+      assertThat("all Event returns true for Phase " + phaseValue.toString(), isRunMethod.invoke(phaseValue, endPoint, null, null), is(TRUE));
     }
 
     endPoint.setEvent("queued");
-    assertEquals("queued Event returns true for Phase Queued",
-            isRunMethod.invoke(Phase.QUEUED, endPoint, null, null), Boolean.TRUE);
-    assertEquals("queued Event returns false for Phase Started",
-            isRunMethod.invoke(Phase.STARTED, endPoint, null, null), Boolean.FALSE);
+    assertThat("queued Event returns true for Phase Queued", isRunMethod.invoke(Phase.QUEUED, endPoint, null, null), is(TRUE));
+    assertThat("queued Event returns false for Phase Started", isRunMethod.invoke(Phase.STARTED, endPoint, null, null), is(FALSE));
 
     endPoint.setEvent("started");
-    assertEquals("started Event returns true for Phase Started",
-            isRunMethod.invoke(Phase.STARTED, endPoint, null, null), Boolean.TRUE);
-    assertEquals("started Event returns false for Phase Completed",
-            isRunMethod.invoke(Phase.COMPLETED, endPoint, null, null), Boolean.FALSE);
+    assertThat("started Event returns true for Phase Started", isRunMethod.invoke(Phase.STARTED, endPoint, null, null), is(TRUE));
+    assertThat("started Event returns false for Phase Completed", isRunMethod.invoke(Phase.COMPLETED, endPoint, null, null), is(FALSE));
 
 
     endPoint.setEvent("completed");
-    assertEquals("completed Event returns true for Phase Completed",
-            isRunMethod.invoke(Phase.COMPLETED, endPoint, null, null), Boolean.TRUE);
-    assertEquals("completed Event returns false for Phase Finalized",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), Boolean.FALSE);
+    assertThat("completed Event returns true for Phase Completed", isRunMethod.invoke(Phase.COMPLETED, endPoint, null, null), is(TRUE));
+    assertThat("completed Event returns false for Phase Finalized", isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), is(FALSE));
 
 
     endPoint.setEvent("finalized");
-    assertEquals("finalized Event returns true for Phase Finalized",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), Boolean.TRUE);
-    assertEquals("finalized Event returns true for Phase Queued",
-            isRunMethod.invoke(Phase.QUEUED, endPoint, null, null), Boolean.FALSE);
+    assertThat("finalized Event returns true for Phase Finalized", isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), is(TRUE));
+    assertThat("finalized Event returns true for Phase Queued", isRunMethod.invoke(Phase.QUEUED, endPoint, null, null), is(FALSE));
 
 
     endPoint.setEvent("failed");
-    assertEquals("failed Event returns false for Phase Finalized and no status",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), Boolean.FALSE);
-    assertEquals("failed Event returns false for Phase Finalized and success status",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, null), Boolean.FALSE);
-    assertEquals("failed Event returns true for Phase Finalized and success failure",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.FAILURE, null), Boolean.TRUE);
-    assertEquals("failed Event returns false for Phase not Finalized and success failure",
-            isRunMethod.invoke(Phase.COMPLETED, endPoint, Result.FAILURE, null), Boolean.FALSE);
+    assertThat("failed Event returns false for Phase Finalized and no status", isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), is(FALSE));
+    assertThat("failed Event returns false for Phase Finalized and success status", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, null), is(FALSE));
+    assertThat("failed Event returns true for Phase Finalized and success failure", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.FAILURE, null), is(TRUE));
+    assertThat("failed Event returns false for Phase not Finalized and success failure", isRunMethod.invoke(Phase.COMPLETED, endPoint, Result.FAILURE, null), is(FALSE));
 
     endPoint.setEvent("failedAndFirstSuccess");
-    assertEquals("failedAndFirstSuccess Event returns false for Phase Finalized and no status",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), Boolean.FALSE);
-    assertEquals("failedAndFirstSuccess Event returns false for Phase Finalized and no previous status",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, null), Boolean.FALSE);
-    assertEquals("failedAndFirstSuccess Event returns true for Phase Finalized and no previous status and failed status",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.FAILURE, null), Boolean.TRUE);
-    assertEquals("failedAndFirstSuccess Event returns true for Phase Finalized and failed status",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.FAILURE, Result.FAILURE), Boolean.TRUE);
-    assertEquals("failedAndFirstSuccess Event returns true for Phase Finalized and success status with previous status of failure",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, Result.FAILURE), Boolean.TRUE);
-    assertEquals("failedAndFirstSuccess Event returns false for Phase Finalized and success status with previous status of success",
-            isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, Result.SUCCESS), Boolean.FALSE);
-    assertEquals("failedAndFirstSuccess Event returns false for Phase not Finalized",
-            isRunMethod.invoke(Phase.COMPLETED, endPoint, Result.SUCCESS, Result.FAILURE), Boolean.FALSE);
+    assertThat("failedAndFirstSuccess Event returns false for Phase Finalized and no status", isRunMethod.invoke(Phase.FINALIZED, endPoint, null, null), is(FALSE));
+    assertThat("failedAndFirstSuccess Event returns false for Phase Finalized and no previous status", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, null), is(FALSE));
+    assertThat("failedAndFirstSuccess Event returns true for Phase Finalized and no previous status and failed status", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.FAILURE, null), is(TRUE));
+    assertThat("failedAndFirstSuccess Event returns true for Phase Finalized and failed status", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.FAILURE, Result.FAILURE), is(TRUE));
+    assertThat("failedAndFirstSuccess Event returns true for Phase Finalized and success status with previous status of failure", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, Result.FAILURE), is(TRUE));
+    assertThat("failedAndFirstSuccess Event returns false for Phase Finalized and success status with previous status of success", isRunMethod.invoke(Phase.FINALIZED, endPoint, Result.SUCCESS, Result.SUCCESS), is(FALSE));
+    assertThat("failedAndFirstSuccess Event returns false for Phase not Finalized", isRunMethod.invoke(Phase.COMPLETED, endPoint, Result.SUCCESS, Result.FAILURE), is(FALSE));
   }
 
   @Test
