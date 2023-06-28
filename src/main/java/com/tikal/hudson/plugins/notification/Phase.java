@@ -52,10 +52,10 @@ import java.util.Set;
 public enum Phase {
     QUEUED, STARTED, COMPLETED, FINALIZED, NONE;
 
-	private Result findLastBuildThatFinished(Run run){
+	private Result findLastBuildThatFinished(final Run run){
         Run previousRun = run.getPreviousCompletedBuild();
         while(previousRun != null){
-	        Result previousResults = previousRun.getResult();
+	        final Result previousResults = previousRun.getResult();
 			if (previousResults == null) {
 				throw new IllegalStateException("Previous result can't be null here");
 			}
@@ -68,7 +68,7 @@ public enum Phase {
 	}
 
     @SuppressWarnings( "CastToConcreteClass" )
-    public void handle(Run run, TaskListener listener, long timestamp) {
+    public void handle(final Run run, final TaskListener listener, final long timestamp) {
 	    handle(run, listener, timestamp, false, null, 0, this);
     }
 
@@ -80,7 +80,7 @@ public enum Phase {
      * @param logger PrintStream used for logging.
      * @return True if URL is populated with a non-blank value, or a variable that expands into a URL.
      */
-    private boolean isURLValid(String urlInputValue, String expandedUrl, PrintStream logger){
+    private boolean isURLValid(final String urlInputValue, final String expandedUrl, final PrintStream logger){
         boolean isValid= false;
         //If Jenkins variable was used for URL, and it was unresolvable, log warning and return.
         if (expandedUrl.contains("$")) {
@@ -98,44 +98,39 @@ public enum Phase {
     /**
      * Determines if the endpoint specified should be notified at the current job phase.
      */
-    private boolean isRun( Endpoint endpoint, Result result, Result previousRunResult ) {
-        String event = endpoint.getEvent();
+    private boolean isRun(final Endpoint endpoint, final Result result, final Result previousRunResult ) {
+        final String event = endpoint.getEvent();
 
-        if(event == null)
+        if(event == null || "all".equals(event))
         	return true;
 
         switch(event){
-        case "all":
-        	return true;
-        case "failed":
-        	if (result == null) {return false;}
-        	return this.equals(FINALIZED) && result.equals(Result.FAILURE);
-        case "failedAndFirstSuccess":
-        	if (result == null || !this.equals(FINALIZED)) {return false;}
-        	if (result.equals(Result.FAILURE)) {return true;}
-            return previousRunResult != null && result.equals(Result.SUCCESS)
-                && previousRunResult.equals(Result.FAILURE);
+            case "failed":
+                if (result == null) {return false;}
+                return this.equals(FINALIZED) && result.equals(Result.FAILURE);
+            case "failedAndFirstSuccess":
+                if (result == null || !this.equals(FINALIZED)) {return false;}
+                if (result.equals(Result.FAILURE)) {return true;}
+                return previousRunResult != null && result.equals(Result.SUCCESS)
+                    && previousRunResult.equals(Result.FAILURE);
             case "manual":
-          return false;
-        default:
-        	return event.equals(this.toString().toLowerCase());
+                return false;
+            default:
+                return event.equals(this.toString().toLowerCase());
         }
     }
 
-    private JobState buildJobState(Job job, Run run, TaskListener listener, long timestamp, Endpoint target, Phase phase)
-        throws IOException, InterruptedException
-    {
-        Jenkins            jenkins      = Jenkins.getInstanceOrNull();
+    private JobState buildJobState(final Job job, final Run run, final TaskListener listener, final long timestamp, final Endpoint target, final Phase phase, final EnvVars environment) {
+        final Jenkins            jenkins      = Jenkins.getInstanceOrNull();
         assert jenkins != null;
 
-        String             rootUrl      = jenkins.getRootUrl();
-        JobState           jobState     = new JobState();
-        BuildState         buildState   = new BuildState();
-        ScmState           scmState     = new ScmState();
-        Result             result       = run.getResult();
-        ParametersAction   paramsAction = run.getAction(ParametersAction.class);
-        EnvVars            environment  = run.getEnvironment( listener );
-        StringBuilder      log          = this.getLog(run, target);
+        final String             rootUrl      = jenkins.getRootUrl();
+        final JobState           jobState     = new JobState();
+        final BuildState         buildState   = new BuildState();
+        final ScmState           scmState     = new ScmState();
+        final Result             result       = run.getResult();
+        final ParametersAction   paramsAction = run.getAction(ParametersAction.class);
+        final StringBuilder      log          = this.getLog(run, target);
 
         jobState.setName( job.getName());
         jobState.setDisplayName(job.getDisplayName());
@@ -165,36 +160,41 @@ public enum Phase {
 
         //TODO: Make this optional to reduce chat overload.
         if ( paramsAction != null ) {
-            EnvVars env = new EnvVars();
-            for (ParameterValue value : paramsAction.getParameters()){
+            final EnvVars env = new EnvVars();
+            for (final ParameterValue value : paramsAction.getParameters()){
                 if ( ! value.isSensitive()) {
                     value.buildEnvironment( run, env );
                 }
             }
             buildState.setParameters(env);
         }
-        
-        BuildData build = job.getAction(BuildData.class);
+
+        setupScmState(job, run, scmState, environment);
+
+        return jobState;
+    }
+
+    private void setupScmState(final Job job, final Run run, final ScmState scmState, final EnvVars environment) {
+        final BuildData build = job.getAction(BuildData.class);
 
         if ( build != null ) {
             if ( !build.remoteUrls.isEmpty() ) {
-                String url = build.remoteUrls.iterator().next();
+                final String url = build.remoteUrls.iterator().next();
                 if ( url != null ) {
                     scmState.setUrl( url );
                 }
             }
-            for (Map.Entry<String, Build> entry : build.buildsByBranchName.entrySet()) {
+            for (final Map.Entry<String, Build> entry : build.buildsByBranchName.entrySet()) {
                 if ( entry.getValue().hudsonBuildNumber == run.number ) {
                     scmState.setBranch( entry.getKey() );
                     scmState.setCommit( entry.getValue().revision.getSha1String() );
                 }
             }
         }
-        
+
         if ( environment.get( "GIT_URL" ) != null ) {
             scmState.setUrl( environment.get( "GIT_URL" ));
         }
-        
 
         if ( environment.get( "GIT_BRANCH" ) != null ) {
             scmState.setBranch( environment.get( "GIT_BRANCH" ));
@@ -206,22 +206,20 @@ public enum Phase {
 
         scmState.setChanges(getChangedFiles(run));
         scmState.setCulprits(getCulprits(run));
-
-        return jobState;
     }
 
-    private String resolveMacros(Run build, TaskListener listener, String text) {
+    private String resolveMacros(final Run build, final TaskListener listener, final String text) {
 
         String result = text;
         try {
-            Executor executor = build.getExecutor();
+            final Executor executor = build.getExecutor();
             if(executor != null) {
-                FilePath workspace = executor.getCurrentWorkspace();
+                final FilePath workspace = executor.getCurrentWorkspace();
                 if(workspace != null) {
                     result = TokenMacro.expandAll(build, workspace, listener, text);
                 }
             }
-        } catch (Throwable e) {
+        } catch (final Throwable e) {
             // Catching Throwable here because the TokenMacro plugin is optional
             // so will throw a ClassDefNotFoundError if the plugin is not installed or disabled.
             e.printStackTrace(listener.error(String.format("Failed to evaluate macro '%s'", text)));
@@ -230,14 +228,14 @@ public enum Phase {
         return result;
     }
 
-    private TestState getTestResults(Run build) {
+    private TestState getTestResults(final Run build) {
         TestState resultSummary = null;
 
-        AbstractTestResultAction testAction = build.getAction(AbstractTestResultAction.class);
+        final AbstractTestResultAction testAction = build.getAction(AbstractTestResultAction.class);
         if(testAction != null) {
-            int total = testAction.getTotalCount();
-            int failCount = testAction.getFailCount();
-            int skipCount = testAction.getSkipCount();
+            final int total = testAction.getTotalCount();
+            final int failCount = testAction.getFailCount();
+            final int skipCount = testAction.getSkipCount();
 
             resultSummary = new TestState();
             resultSummary.setTotal(total);
@@ -251,28 +249,27 @@ public enum Phase {
         return resultSummary;
     }
 
-    private List<String> getFailedTestNames(AbstractTestResultAction testResultAction) {
-        List<String> failedTests = new ArrayList<>();
+    private List<String> getFailedTestNames(final AbstractTestResultAction testResultAction) {
+        final List<String> failedTests = new ArrayList<>();
+        final List<? extends TestResult> results = testResultAction.getFailedTests();
 
-        List<? extends TestResult> results = testResultAction.getFailedTests();
-
-        for(TestResult t : results) {
+        for(final TestResult t : results) {
             failedTests.add(t.getFullName());
         }
 
         return failedTests;
     }
 
-    private List<String> getChangedFiles(Run run) {
-        List<String> affectedPaths = new ArrayList<>();
+    private List<String> getChangedFiles(final Run run) {
+        final List<String> affectedPaths = new ArrayList<>();
 
         if(run instanceof AbstractBuild) {
-            AbstractBuild build = (AbstractBuild) run;
+            final AbstractBuild build = (AbstractBuild) run;
 
-            Object[] items = build.getChangeSet().getItems();
+            final Object[] items = build.getChangeSet().getItems();
 
-            if(items != null && items.length > 0) {
-                for(Object o : items) {
+            if(items != null) {
+                for(final Object o : items) {
                     if(o instanceof ChangeLogSet.Entry) {
                         affectedPaths.addAll(((ChangeLogSet.Entry) o).getAffectedPaths());
                     }
@@ -283,13 +280,14 @@ public enum Phase {
         return affectedPaths;
     }
 
-    private List<String> getCulprits(Run run) {
-        List<String> culprits = new ArrayList<>();
+    private List<String> getCulprits(final Run run) {
+        final List<String> culprits = new ArrayList<>();
 
         if(run instanceof AbstractBuild) {
-            AbstractBuild build = (AbstractBuild) run;
-            Set<User> buildCulprits = build.getCulprits();
-            for(User user : buildCulprits) {
+            final AbstractBuild build = (AbstractBuild) run;
+            final Set<User> buildCulprits = build.getCulprits();
+
+            for(final User user : buildCulprits) {
                 culprits.add(user.getId());
             }
         }
@@ -297,110 +295,142 @@ public enum Phase {
         return culprits;
     }
 
-    private StringBuilder getLog(Run run, Endpoint target) {
-        StringBuilder log = new StringBuilder();
-        Integer loglines = target.getLoglines();
+    private StringBuilder getLog(final Run run, final Endpoint target) {
+        final StringBuilder log = new StringBuilder();
+        final Integer logLines = target.getLoglines();
 
-        if (loglines == null || loglines == 0) {
+        if (logLines == null || logLines == 0) {
             return log;
         }
 
         try {
             // The full log
-            if (loglines == -1) {
-                log.append(run.getLog());
+            if (logLines == -1) {
+                log.append(run.getLog(128));
             } else {
-                List<String> logEntries = run.getLog(loglines);
-                for (String entry : logEntries) {
+                final List<String> logEntries = run.getLog(logLines);
+                for (final String entry : logEntries) {
                     log.append(entry);
                     log.append("\n");
                 }
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.append("Unable to retrieve log");
         }
+
         return log;
     }
 
-    public void handle(Run run, TaskListener listener, long timestamp, boolean manual, final String buildNotes, final Integer logLines, Phase phase) {
+    public void handle(final Run run, final TaskListener listener, final long timestamp, final boolean manual, final String buildNotes, final Integer logLines, final Phase phase) {
         final Job job = run.getParent();
         final HudsonNotificationProperty property = (HudsonNotificationProperty) job.getProperty(HudsonNotificationProperty.class);
+
         if ( property == null ) {
             return;
         }
 
-        Result previousCompletedRunResults = findLastBuildThatFinished(run);
+        final Result previousCompletedRunResults = findLastBuildThatFinished(run);
 
-        for ( Endpoint target : property.getEndpoints()) {
+        for ( final Endpoint target : property.getEndpoints()) {
             if ((!manual && !isRun(target, run.getResult(), previousCompletedRunResults)) || Utils.isEmpty(target.getUrlInfo().getUrlOrId())) {
                 continue;
             }
 
-            if(Objects.nonNull(buildNotes)) {
-                target.setBuildNotes(buildNotes);
+            fixTarget(buildNotes, logLines, target);
+
+            try {
+                notifyEndpoint(run, listener, timestamp, manual, phase, job, target);
+            } catch (final InterruptedException | IOException e) {
+                final String targetUrl = target.getUrlInfo().getUrlOrId();
+                e.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", targetUrl)));
+                listener.getLogger().printf("Failed to notify endpoint with %s - %s: %s%n",
+                        targetUrl, e.getClass().getName(), e.getMessage());
             }
+        }
+    }
 
-            if(Objects.nonNull(logLines) && logLines != 0) {
-                target.setLoglines(logLines);
-            }
+    private void notifyEndpoint(final Run run, final TaskListener listener, final long timestamp, final boolean manual, final Phase phase, final Job job, final Endpoint target) throws IOException, InterruptedException {
+        int triesRemaining = target.getRetries();
+        boolean failed = false;
+        final EnvVars environment = run.getEnvironment(listener);
+        do {
+            // Represents a string that will be put into the log
+            // if there is an error contacting the target.
+            String urlIdString = "url 'unknown'";
+            try {
+                // Expand out the URL from environment + url.
+                final String expandedUrl;
+                final UrlInfo urlInfo = target.getUrlInfo();
+                switch (urlInfo.getUrlType()) {
+                    case PUBLIC:
+                        expandedUrl = environment.expand(urlInfo.getUrlOrId());
+                        urlIdString = String.format("url '%s'", expandedUrl);
+                        break;
+                    case SECRET:
+                        final String urlSecretId = urlInfo.getUrlOrId();
+                        final String actualUrl = Utils.getSecretUrl(urlSecretId, job.getParent());
+                        expandedUrl = environment.expand(actualUrl);
+                        urlIdString = String.format("credentials id '%s'", urlSecretId);
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unknown URL type");
+                }
 
-            int triesRemaining = target.getRetries();
-            boolean failed = false;
-            do {
-                // Represents a string that will be put into the log
-                // if there is an error contacting the target.
-                String urlIdString = "url 'unknown'";
-                try {
-                    EnvVars environment = run.getEnvironment(listener);
-                    // Expand out the URL from environment + url.
-                    String expandedUrl;
-                    UrlInfo urlInfo = target.getUrlInfo();
-                    switch (urlInfo.getUrlType()) {
-                        case PUBLIC:
-                            expandedUrl = environment.expand(urlInfo.getUrlOrId());
-                            urlIdString = String.format("url '%s'", expandedUrl);
-                            break;
-                        case SECRET:
-                            String urlSecretId = urlInfo.getUrlOrId();
-                            String actualUrl = Utils.getSecretUrl(urlSecretId, job.getParent());
-                            expandedUrl = environment.expand(actualUrl);
-                            urlIdString = String.format("credentials id '%s'", urlSecretId);
-                            break;
-                        default:
-                            throw new UnsupportedOperationException("Unknown URL type");
-                    }
+                if (!isURLValid(urlIdString, expandedUrl, listener.getLogger())) {
+                    continue;
+                }
 
-                    if (!isURLValid(urlIdString, expandedUrl, listener.getLogger())) {
-                        continue;
-                    }
+                if (filterByBranch(listener, manual, target, environment)) {
+                    continue;
+                }
 
-                    final String branch = target.getBranch();
-                    if (!manual && environment.containsKey("BRANCH_NAME") && !environment.get("BRANCH_NAME").matches(branch)) {
-                        listener.getLogger().printf("Environment variable %s with value %s does not match configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), branch);
-                        continue;
-                    }else if(!manual && !environment.containsKey("BRANCH_NAME") && !".*".equals(branch)){
-                        listener.getLogger().printf("Environment does not contain %s variable%n", "BRANCH_NAME");
-                        continue;
-                    }
-
-                    listener.getLogger().printf("Notifying endpoint with %s%n", urlIdString);
-                    JobState jobState = buildJobState(job, run, listener, timestamp, target, phase);
-                    target.getProtocol().send(expandedUrl,
-                        target.getFormat().serialize(jobState),
-                        target.getTimeout(),
-                        target.isJson());
-                } catch (Throwable error) {
-                    failed = true;
-                    error.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", urlIdString)));
-                    listener.getLogger().printf("Failed to notify endpoint with %s - %s: %s%n",
-                        urlIdString, error.getClass().getName(), error.getMessage());
-                    if (triesRemaining > 0) {
-                        listener.getLogger().printf(
-                            "Reattempting to notify endpoint with %s (%d tries remaining)%n", urlIdString, triesRemaining);
-                    }
+                listener.getLogger().printf("Notifying endpoint with %s%n", urlIdString);
+                final JobState jobState = buildJobState(job, run, listener, timestamp, target, phase, environment);
+                target.getProtocol().send(expandedUrl,
+                    target.getFormat().serialize(jobState),
+                    target.getTimeout(),
+                    target.isJson());
+            } catch (final Throwable error) {
+                failed = true;
+                error.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", urlIdString)));
+                listener.getLogger().printf("Failed to notify endpoint with %s - %s: %s%n",
+                    urlIdString, error.getClass().getName(), error.getMessage());
+                if (triesRemaining > 0) {
+                    listener.getLogger().printf(
+                        "Reattempting to notify endpoint with %s (%d tries remaining)%n", urlIdString, triesRemaining);
                 }
             }
-            while (failed && --triesRemaining >= 0);
         }
+        while (failed && --triesRemaining >= 0);
+    }
+
+    private static void fixTarget(final String buildNotes, final Integer logLines, final Endpoint target) {
+        if(Objects.nonNull(buildNotes)) {
+            target.setBuildNotes(buildNotes);
+        }
+
+        if(Objects.nonNull(logLines) && logLines != 0) {
+            target.setLoglines(logLines);
+        }
+    }
+
+    private static boolean filterByBranch(final TaskListener listener, final boolean manual, final Endpoint target, final EnvVars environment) {
+        final String branch = target.getBranch();
+
+        String environmentKey = "BRANCH_NAME";
+        if(!environment.containsKey(environmentKey))
+        {
+            environmentKey = "gitbranch";
+        }
+
+        if (!manual && environment.containsKey(environmentKey) && !environment.get(environmentKey).matches(branch)) {
+            listener.getLogger().printf("Environment variable %s with value %s does not match configured branch filter %s%n", environmentKey, environment.get(environmentKey), branch);
+            return true;
+        }else if(!manual && !environment.containsKey(environmentKey) && !".*".equals(branch)){
+            listener.getLogger().printf("Environment does not contain %s variables%n", "BRANCH_NAME or gitbranch");
+            return true;
+        }
+
+        return false;
     }
 }

@@ -78,7 +78,7 @@
                             </p:rowWrapper>
                             <p:rowWrapper>
                                 <p:cellWrapper>
-                                    <f:entry title="Log" description="Number lines of log messages to send. Use -1 for all (use with caution)."
+                                    <f:entry title="Log" description="Number lines of log messages to send (max. 128)."
                                         field="loglines">
                                         <f:textbox name="loglines" value="${endpoint.loglines}" default="0" />
                                     </f:entry>
