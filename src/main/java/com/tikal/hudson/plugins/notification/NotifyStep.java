@@ -1,11 +1,11 @@
 package com.tikal.hudson.plugins.notification;
 
+import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.eclipse.collections.impl.factory.Sets;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -14,12 +14,11 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 
 public class NotifyStep extends Step implements Serializable {
   private static final long serialVersionUID = -2818860651754465006L;
@@ -46,7 +45,7 @@ public class NotifyStep extends Step implements Serializable {
   }
 
   @DataBoundSetter
-  public void setPhase(@CheckForNull String phase) {
+  public void setPhase(@CheckForNull final String phase) {
     this.phase = Util.fixEmpty(phase);
   }
 
@@ -59,17 +58,12 @@ public class NotifyStep extends Step implements Serializable {
   }
 
   @DataBoundSetter
-  public void setLoglines(@CheckForNull String loglines) {
+  public void setLoglines(@CheckForNull final String loglines) {
     this.loglines = Util.fixEmpty(loglines);
   }
 
-  /**
-   * Creates a new instance of {@link NotifyStep}.
-   */
   @DataBoundConstructor
   public NotifyStep() {
-    super();
-
     // empty constructor required for Stapler
   }
 
@@ -93,7 +87,7 @@ public class NotifyStep extends Step implements Serializable {
 
     @Override
     public boolean start() throws Exception {
-      String logLines = notifyStep.getLoglines();
+      final String logLines = notifyStep.getLoglines();
 
       Phase.NONE.handle(Objects.requireNonNull(getContext().get(Run.class)), getContext().get(TaskListener.class), System.currentTimeMillis(), true,
           notifyStep.getNotes(), Integer.parseInt(logLines != null ? logLines : "0"), Phase.valueOf(notifyStep.getPhase()));
@@ -122,9 +116,12 @@ public class NotifyStep extends Step implements Serializable {
     }
 
     @Override
+    /*
+      Made use of implementation of
+      @see org.jenkinsci.plugins.workflow.steps.scm.SCMStep
+     */
     public Set<? extends Class<?>> getRequiredContext() {
-      return Sets.immutable.of(FilePath.class, FlowNode.class, Run.class, TaskListener.class)
-          .castToSet();
+      return ImmutableSet.of(Run.class, FilePath.class, TaskListener.class, FlowNode.class);
     }
   }
 }
