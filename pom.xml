@@ -21,11 +21,11 @@
 	<properties>
 		<revision>1.18</revision>
 		<changelist>-SNAPSHOT</changelist>
-		<jenkins.version>2.426.3</jenkins.version>
+		<jenkins.version>2.472</jenkins.version>
 		<gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 		<!-- TODO JENKINS-73339 until in parent POM -->
-		<jenkins-test-harness.version>2254.vcff7a_d4969e5</jenkins-test-harness.version>
-		<maven.compiler.testRelease>17</maven.compiler.testRelease>
+		<jenkins-test-harness.version>2250.v03a_1295b_0a_30</jenkins-test-harness.version>
+		<maven.compiler.release>17</maven.compiler.release>
 	</properties>
 
     <repositories>
@@ -58,8 +58,8 @@
 		<dependencies>
 			<dependency>
 				<groupId>io.jenkins.tools.bom</groupId>
-				<artifactId>bom-2.289.x</artifactId>
-				<version>1362.v59f2f3db_80ee</version>
+				<artifactId>bom-weekly</artifactId>
+				<version>3258.vcdcf15936a_fd</version>
 				<scope>import</scope>
 				<type>pom</type>
 			</dependency>
@@ -71,7 +71,13 @@
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
-			<version>2.9.0</version>
+			<version>2.11.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.google.errorprone</groupId>
+					<artifactId>error_prone_annotations</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
