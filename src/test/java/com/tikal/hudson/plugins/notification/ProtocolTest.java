@@ -28,11 +28,10 @@ import com.google.common.base.Objects;
 import com.google.common.io.CharStreams;
 import junit.framework.TestCase;
 import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.ee8.servlet.ServletHandler;
-import org.eclipse.jetty.ee8.servlet.ServletHolder;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
