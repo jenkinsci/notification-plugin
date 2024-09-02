@@ -38,10 +38,6 @@ public class PhaseTest {
   @Mock
   private EnvVars environment;
   @Mock
-  private Protocol protocol;
-  @Mock
-  private Format format;
-  @Mock
   private PrintStream logger;
   @Mock
   private Jenkins jenkins;
@@ -163,6 +159,16 @@ public class PhaseTest {
       jenkinsMockedStatic.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
       jenkinsMockedStatic.when(Jenkins::getInstance).thenReturn(jenkins);
 
+      Protocol httpProtocolSpy = spy(Protocol.HTTP);
+      when(endpoint.getProtocol()).thenReturn(httpProtocolSpy);
+      doNothing().when(httpProtocolSpy).send(anyString(), any(byte[].class), anyInt(), anyBoolean());
+
+      Format jsonFormatSpy = spy(Format.JSON);
+      JobState jobState = new JobState();
+      when(endpoint.getFormat()).thenReturn(jsonFormatSpy);
+      doReturn(data).when(jsonFormatSpy).serialize(isA(JobState.class));
+      assertEquals(data, jsonFormatSpy.serialize(jobState));
+
       when(run.getParent()).thenReturn(job);
       when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
       when(property.getEndpoints()).thenReturn(asList(endpoint));
@@ -175,15 +181,15 @@ public class PhaseTest {
       when(environment.containsKey("BRANCH_NAME")).thenReturn(true);
       when(environment.get("BRANCH_NAME")).thenReturn("branchName");
       when(listener.getLogger()).thenReturn(logger);
-      when(endpoint.getProtocol()).thenReturn(protocol);
+      //when(endpoint.getProtocol()).thenReturn(protocol);
       when(endpoint.getTimeout()).thenReturn(42);
-      when(endpoint.getFormat()).thenReturn(format);
-      when(format.serialize(isA(JobState.class))).thenReturn(data);
+      //when(endpoint.getFormat()).thenReturn(format);
+      //when(format.serialize(isA(JobState.class))).thenReturn(data);
 
       Phase.STARTED.handle(run, listener, 1L);
 
       verify(logger).printf("Notifying endpoint with %s%n", "url 'expandedUrl'");
-      verify(protocol).send("expandedUrl", data, 42, false);
+      verify(httpProtocolSpy).send("expandedUrl", data, 42, false);
       verify(run).getPreviousCompletedBuild();
     }
   }
@@ -197,6 +203,17 @@ public class PhaseTest {
       jenkinsMockedStatic.when(Jenkins::getInstance).thenReturn(jenkins);
       utilsMockedStatic.when(() -> Utils.getSecretUrl("credentialsId", jenkins)).thenReturn("$secretUrl");
 
+      Protocol httpProtocolSpy = spy(Protocol.HTTP);
+      when(endpoint.getProtocol()).thenReturn(httpProtocolSpy);
+      doNothing().when(httpProtocolSpy).send(anyString(), any(byte[].class), anyInt(), anyBoolean());
+
+      Format jsonFormatSpy = spy(Format.JSON);
+      JobState jobState = new JobState();
+      when(endpoint.getFormat()).thenReturn(jsonFormatSpy);
+      doReturn(data).when(jsonFormatSpy).serialize(isA(JobState.class));
+      assertEquals(data, jsonFormatSpy.serialize(jobState));
+
+
       when(run.getParent()).thenReturn(job);
       when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
       when(property.getEndpoints()).thenReturn(asList(endpoint));
@@ -208,15 +225,14 @@ public class PhaseTest {
       when(urlInfo.getUrlType()).thenReturn(SECRET);
       when(environment.expand("$secretUrl")).thenReturn("secretUrl");
       when(listener.getLogger()).thenReturn(logger);
-      when(endpoint.getProtocol()).thenReturn(protocol);
+      //when(endpoint.getProtocol()).thenReturn(protocol);
       when(endpoint.getTimeout()).thenReturn(42);
-      when(endpoint.getFormat()).thenReturn(format);
-      when(format.serialize(isA(JobState.class))).thenReturn(data);
+      //when(format.serialize(isA(JobState.class))).thenReturn(data);
 
       Phase.STARTED.handle(run, listener, 1L);
 
       verify(logger).printf( "Notifying endpoint with %s%n","credentials id 'credentialsId'");
-      verify(protocol).send("secretUrl", data, 42, false);
+      verify(httpProtocolSpy).send("secretUrl", data, 42, false);
       verify(run).getPreviousCompletedBuild();
     }
   }
