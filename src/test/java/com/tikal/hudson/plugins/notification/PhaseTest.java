@@ -181,10 +181,7 @@ public class PhaseTest {
       when(environment.containsKey("BRANCH_NAME")).thenReturn(true);
       when(environment.get("BRANCH_NAME")).thenReturn("branchName");
       when(listener.getLogger()).thenReturn(logger);
-      //when(endpoint.getProtocol()).thenReturn(protocol);
       when(endpoint.getTimeout()).thenReturn(42);
-      //when(endpoint.getFormat()).thenReturn(format);
-      //when(format.serialize(isA(JobState.class))).thenReturn(data);
 
       Phase.STARTED.handle(run, listener, 1L);
 
@@ -213,7 +210,6 @@ public class PhaseTest {
       doReturn(data).when(jsonFormatSpy).serialize(isA(JobState.class));
       assertEquals(data, jsonFormatSpy.serialize(jobState));
 
-
       when(run.getParent()).thenReturn(job);
       when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
       when(property.getEndpoints()).thenReturn(asList(endpoint));
@@ -225,9 +221,7 @@ public class PhaseTest {
       when(urlInfo.getUrlType()).thenReturn(SECRET);
       when(environment.expand("$secretUrl")).thenReturn("secretUrl");
       when(listener.getLogger()).thenReturn(logger);
-      //when(endpoint.getProtocol()).thenReturn(protocol);
       when(endpoint.getTimeout()).thenReturn(42);
-      //when(format.serialize(isA(JobState.class))).thenReturn(data);
 
       Phase.STARTED.handle(run, listener, 1L);
 
