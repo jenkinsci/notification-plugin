@@ -176,15 +176,11 @@ public class ProtocolTest extends TestCase {
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
     context.setContextPath("/"); // Root context
 
-    // Add a servlet to handle requests to /hello
+    // Add a servlet to handle requests
     context.addServlet(new ServletHolder(servlet), path);
 
     // Set the context handler to the server
     server.setHandler(context);
-
-    //ServletHandler servletHandler = new ServletHandler();
-    //server.setHandler(servletHandler);
-    //servletHandler.addServletWithMapping(new ServletHolder(servlet), path);
 
     server.start();
     servers.add(server);
