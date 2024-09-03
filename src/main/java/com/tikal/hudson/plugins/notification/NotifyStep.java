@@ -5,7 +5,6 @@ import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.eclipse.collections.impl.factory.Sets;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -123,8 +122,7 @@ public class NotifyStep extends Step implements Serializable {
 
     @Override
     public Set<? extends Class<?>> getRequiredContext() {
-      return Sets.immutable.of(FilePath.class, FlowNode.class, Run.class, TaskListener.class)
-          .castToSet();
+      return Set.of(FilePath.class, FlowNode.class, Run.class, TaskListener.class);
     }
   }
 }
