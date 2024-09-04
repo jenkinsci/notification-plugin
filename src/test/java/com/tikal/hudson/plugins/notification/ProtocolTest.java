@@ -171,14 +171,9 @@ public class ProtocolTest extends TestCase {
     ServerConnector connector = new ServerConnector(server);
     server.setConnectors(new Connector[] {connector});
 
-    // Create a ServletContextHandler to handle servlets
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-    context.setContextPath("/"); // Root context
-
-    // Add a servlet to handle requests
+    context.setContextPath("/");
     context.addServlet(new ServletHolder(servlet), path);
-
-    // Set the context handler to the server
     server.setHandler(context);
 
     server.start();
