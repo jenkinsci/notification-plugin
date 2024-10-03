@@ -102,12 +102,9 @@ public enum Protocol {
             connection.setReadTimeout(timeout);
             connection.connect();
             try {
-                OutputStream output = connection.getOutputStream();
-                try {
+                try (OutputStream output = connection.getOutputStream()) {
                     output.write(data);
                     output.flush();
-                } finally {
-                    output.close();
                 }
             } finally {
                 // Follow an HTTP Temporary Redirect if we get one,
