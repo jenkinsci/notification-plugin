@@ -23,14 +23,15 @@
  */
 package com.tikal.hudson.plugins.notification;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.io.CharStreams;
 import junit.framework.TestCase;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -92,7 +93,7 @@ public class ProtocolTest extends TestCase {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("url", url)
           .add("method", method)
           .add("body", body)
@@ -170,9 +171,10 @@ public class ProtocolTest extends TestCase {
     ServerConnector connector = new ServerConnector(server);
     server.setConnectors(new Connector[] {connector});
 
-    ServletHandler servletHandler = new ServletHandler();
-    server.setHandler(servletHandler);
-    servletHandler.addServletWithMapping(new ServletHolder(servlet), path);
+    ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+    context.setContextPath("/");
+    context.addServlet(new ServletHolder(servlet), path);
+    server.setHandler(context);
 
     server.start();
     servers.add(server);
