@@ -216,7 +216,7 @@ public class PhaseTest {
         byte[] data = "data".getBytes();
         try (MockedStatic<Jenkins> jenkinsMockedStatic = mockStatic(Jenkins.class)) {
             jenkinsMockedStatic.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
-            jenkinsMockedStatic.when(Jenkins::getInstance).thenReturn(jenkins);
+            jenkinsMockedStatic.when(Jenkins::get).thenReturn(jenkins);
 
             Protocol httpProtocolSpy = spy(Protocol.HTTP);
             when(endpoint.getProtocol()).thenReturn(httpProtocolSpy);
@@ -256,7 +256,7 @@ public class PhaseTest {
         try (MockedStatic<Jenkins> jenkinsMockedStatic = mockStatic(Jenkins.class);
                 MockedStatic<Utils> utilsMockedStatic = mockStatic(Utils.class)) {
             jenkinsMockedStatic.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
-            jenkinsMockedStatic.when(Jenkins::getInstance).thenReturn(jenkins);
+            jenkinsMockedStatic.when(Jenkins::get).thenReturn(jenkins);
             utilsMockedStatic
                     .when(() -> Utils.getSecretUrl("credentialsId", jenkins))
                     .thenReturn("$secretUrl");

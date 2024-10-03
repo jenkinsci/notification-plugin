@@ -75,8 +75,9 @@ public enum Protocol {
             }
 
             Proxy proxy = Proxy.NO_PROXY;
-            if (Jenkins.getInstance() != null && Jenkins.getInstance().proxy != null) {
-                proxy = Jenkins.getInstance().proxy.createProxy(targetUrl.getHost());
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins != null && jenkins.proxy != null) {
+                proxy = jenkins.proxy.createProxy(targetUrl.getHost());
             } else if (proxyUrl != null) {
                 // Proxy connection to the address provided
                 final int proxyPort = proxyUrl.getPort() > 0 ? proxyUrl.getPort() : 80;

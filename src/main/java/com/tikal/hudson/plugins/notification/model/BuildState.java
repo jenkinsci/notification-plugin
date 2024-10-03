@@ -202,13 +202,13 @@ public class BuildState {
         List<Run.Artifact> buildArtifacts = run.getArtifacts();
 
         for (Run.Artifact a : buildArtifacts) {
-            String artifactUrl = Jenkins.getInstance().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
+            String artifactUrl = Jenkins.get().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
             updateArtifact(a.relativePath, "archive", artifactUrl);
         }
     }
 
     private void updateS3Artifacts(Job job, Run run) {
-        if (Jenkins.getInstance().getPlugin("s3") == null) {
+        if (Jenkins.get().getPlugin("s3") == null) {
             return;
         }
         if (!(run instanceof AbstractBuild)) {
