@@ -17,7 +17,6 @@ import com.tikal.hudson.plugins.notification.model.BuildState;
 import com.tikal.hudson.plugins.notification.model.JobState;
 import com.tikal.hudson.plugins.notification.model.ScmState;
 import com.tikal.hudson.plugins.notification.model.TestState;
-
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
@@ -34,11 +33,6 @@ import hudson.plugins.git.util.BuildData;
 import hudson.scm.ChangeLogSet;
 import hudson.tasks.test.AbstractTestResultAction;
 import hudson.tasks.test.TestResult;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-
-import org.jenkinsci.plugins.tokenmacro.TokenMacro;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -46,30 +40,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 
-
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings({"unchecked", "rawtypes"})
 public enum Phase {
-    QUEUED, STARTED, COMPLETED, FINALIZED, NONE;
+    QUEUED,
+    STARTED,
+    COMPLETED,
+    FINALIZED,
+    NONE;
 
-	private Result findLastBuildThatFinished(Run run){
+    private Result findLastBuildThatFinished(Run run) {
         Run previousRun = run.getPreviousCompletedBuild();
-        while(previousRun != null){
-	        Result previousResults = previousRun.getResult();
-			if (previousResults == null) {
-				throw new IllegalStateException("Previous result can't be null here");
-			}
-        	if (previousResults.equals(Result.SUCCESS) || previousResults.equals(Result.FAILURE) || previousResults.equals(Result.UNSTABLE)){
-	        	return previousResults;
-	        }
-        	previousRun = previousRun.getPreviousCompletedBuild();
+        while (previousRun != null) {
+            Result previousResults = previousRun.getResult();
+            if (previousResults == null) {
+                throw new IllegalStateException("Previous result can't be null here");
+            }
+            if (previousResults.equals(Result.SUCCESS)
+                    || previousResults.equals(Result.FAILURE)
+                    || previousResults.equals(Result.UNSTABLE)) {
+                return previousResults;
+            }
+            previousRun = previousRun.getPreviousCompletedBuild();
         }
         return null;
-	}
+    }
 
-    @SuppressWarnings( "CastToConcreteClass" )
+    @SuppressWarnings("CastToConcreteClass")
     public void handle(Run run, TaskListener listener, long timestamp) {
-	    handle(run, listener, timestamp, false, null, 0, this);
+        handle(run, listener, timestamp, false, null, 0, this);
     }
 
     /**
@@ -80,128 +82,133 @@ public enum Phase {
      * @param logger PrintStream used for logging.
      * @return True if URL is populated with a non-blank value, or a variable that expands into a URL.
      */
-    private boolean isURLValid(String urlInputValue, String expandedUrl, PrintStream logger){
-        boolean isValid= false;
-        //If Jenkins variable was used for URL, and it was unresolvable, log warning and return.
+    private boolean isURLValid(String urlInputValue, String expandedUrl, PrintStream logger) {
+        boolean isValid = false;
+        // If Jenkins variable was used for URL, and it was unresolvable, log warning and return.
         if (expandedUrl.contains("$")) {
             logger.printf("Ignoring sending notification due to unresolved variable: %s%n", urlInputValue);
-        }else if(StringUtils.isBlank(expandedUrl)){
+        } else if (StringUtils.isBlank(expandedUrl)) {
             logger.println("URL is not set, ignoring call to send notification.");
-        }else{
-            isValid=true;
+        } else {
+            isValid = true;
         }
         return isValid;
     }
 
-
-
     /**
      * Determines if the endpoint specified should be notified at the current job phase.
      */
-    private boolean isRun( Endpoint endpoint, Result result, Result previousRunResult ) {
+    private boolean isRun(Endpoint endpoint, Result result, Result previousRunResult) {
         String event = endpoint.getEvent();
 
-        if(event == null)
-        	return true;
+        if (event == null) {
+            return true;
+        }
 
-        switch(event){
-        case "all":
-        	return true;
-        case "failed":
-        	if (result == null) {return false;}
-        	return this.equals(FINALIZED) && result.equals(Result.FAILURE);
-        case "failedAndFirstSuccess":
-        	if (result == null || !this.equals(FINALIZED)) {return false;}
-        	if (result.equals(Result.FAILURE)) {return true;}
-            return previousRunResult != null && result.equals(Result.SUCCESS)
-                && previousRunResult.equals(Result.FAILURE);
+        switch (event) {
+            case "all":
+                return true;
+            case "failed":
+                if (result == null) {
+                    return false;
+                }
+                return this.equals(FINALIZED) && result.equals(Result.FAILURE);
+            case "failedAndFirstSuccess":
+                if (result == null || !this.equals(FINALIZED)) {
+                    return false;
+                }
+                if (result.equals(Result.FAILURE)) {
+                    return true;
+                }
+                return previousRunResult != null
+                        && result.equals(Result.SUCCESS)
+                        && previousRunResult.equals(Result.FAILURE);
             case "manual":
-          return false;
-        default:
-        	return event.equals(this.toString().toLowerCase());
+                return false;
+            default:
+                return event.equals(this.toString().toLowerCase());
         }
     }
 
-    private JobState buildJobState(Job job, Run run, TaskListener listener, long timestamp, Endpoint target, Phase phase)
-        throws IOException, InterruptedException
-    {
-        Jenkins            jenkins      = Jenkins.getInstanceOrNull();
+    private JobState buildJobState(
+            Job job, Run run, TaskListener listener, long timestamp, Endpoint target, Phase phase)
+            throws IOException, InterruptedException {
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
         assert jenkins != null;
 
-        String             rootUrl      = jenkins.getRootUrl();
-        JobState           jobState     = new JobState();
-        BuildState         buildState   = new BuildState();
-        ScmState           scmState     = new ScmState();
-        Result             result       = run.getResult();
-        ParametersAction   paramsAction = run.getAction(ParametersAction.class);
-        EnvVars            environment  = run.getEnvironment( listener );
-        StringBuilder      log          = this.getLog(run, target);
+        String rootUrl = jenkins.getRootUrl();
+        JobState jobState = new JobState();
+        BuildState buildState = new BuildState();
+        ScmState scmState = new ScmState();
+        Result result = run.getResult();
+        ParametersAction paramsAction = run.getAction(ParametersAction.class);
+        EnvVars environment = run.getEnvironment(listener);
+        StringBuilder log = this.getLog(run, target);
 
-        jobState.setName( job.getName());
+        jobState.setName(job.getName());
         jobState.setDisplayName(job.getDisplayName());
-        jobState.setUrl( job.getUrl());
-        jobState.setBuild( buildState );
+        jobState.setUrl(job.getUrl());
+        jobState.setBuild(buildState);
 
-        buildState.setNumber( run.number );
-        buildState.setQueueId( run.getQueueId() );
-        buildState.setUrl( run.getUrl());
-        buildState.setPhase( phase );
-        buildState.setTimestamp( timestamp );
-        buildState.setDuration( run.getDuration() );
-        buildState.setScm( scmState );
-        buildState.setLog( log );
+        buildState.setNumber(run.number);
+        buildState.setQueueId(run.getQueueId());
+        buildState.setUrl(run.getUrl());
+        buildState.setPhase(phase);
+        buildState.setTimestamp(timestamp);
+        buildState.setDuration(run.getDuration());
+        buildState.setScm(scmState);
+        buildState.setLog(log);
         buildState.setNotes(resolveMacros(run, listener, target.getBuildNotes()));
         buildState.setTestSummary(getTestResults(run));
 
-        if ( result != null ) {
+        if (result != null) {
             buildState.setStatus(result.toString());
         }
 
-        if ( rootUrl != null ) {
+        if (rootUrl != null) {
             buildState.setFullUrl(rootUrl + run.getUrl());
         }
 
-        buildState.updateArtifacts( job, run );
+        buildState.updateArtifacts(job, run);
 
-        //TODO: Make this optional to reduce chat overload.
-        if ( paramsAction != null ) {
+        // TODO: Make this optional to reduce chat overload.
+        if (paramsAction != null) {
             EnvVars env = new EnvVars();
-            for (ParameterValue value : paramsAction.getParameters()){
-                if ( ! value.isSensitive()) {
-                    value.buildEnvironment( run, env );
+            for (ParameterValue value : paramsAction.getParameters()) {
+                if (!value.isSensitive()) {
+                    value.buildEnvironment(run, env);
                 }
             }
             buildState.setParameters(env);
         }
-        
+
         BuildData build = job.getAction(BuildData.class);
 
-        if ( build != null ) {
-            if ( !build.remoteUrls.isEmpty() ) {
+        if (build != null) {
+            if (!build.remoteUrls.isEmpty()) {
                 String url = build.remoteUrls.iterator().next();
-                if ( url != null ) {
-                    scmState.setUrl( url );
+                if (url != null) {
+                    scmState.setUrl(url);
                 }
             }
             for (Map.Entry<String, Build> entry : build.buildsByBranchName.entrySet()) {
-                if ( entry.getValue().hudsonBuildNumber == run.number ) {
-                    scmState.setBranch( entry.getKey() );
-                    scmState.setCommit( entry.getValue().revision.getSha1String() );
+                if (entry.getValue().hudsonBuildNumber == run.number) {
+                    scmState.setBranch(entry.getKey());
+                    scmState.setCommit(entry.getValue().revision.getSha1String());
                 }
             }
         }
-        
-        if ( environment.get( "GIT_URL" ) != null ) {
-            scmState.setUrl( environment.get( "GIT_URL" ));
-        }
-        
 
-        if ( environment.get( "GIT_BRANCH" ) != null ) {
-            scmState.setBranch( environment.get( "GIT_BRANCH" ));
+        if (environment.get("GIT_URL") != null) {
+            scmState.setUrl(environment.get("GIT_URL"));
         }
 
-        if ( environment.get( "GIT_COMMIT" ) != null ) {
-            scmState.setCommit( environment.get( "GIT_COMMIT" ));
+        if (environment.get("GIT_BRANCH") != null) {
+            scmState.setBranch(environment.get("GIT_BRANCH"));
+        }
+
+        if (environment.get("GIT_COMMIT") != null) {
+            scmState.setCommit(environment.get("GIT_COMMIT"));
         }
 
         scmState.setChanges(getChangedFiles(run));
@@ -215,9 +222,9 @@ public enum Phase {
         String result = text;
         try {
             Executor executor = build.getExecutor();
-            if(executor != null) {
+            if (executor != null) {
                 FilePath workspace = executor.getCurrentWorkspace();
-                if(workspace != null) {
+                if (workspace != null) {
                     result = TokenMacro.expandAll(build, workspace, listener, text);
                 }
             }
@@ -234,7 +241,7 @@ public enum Phase {
         TestState resultSummary = null;
 
         AbstractTestResultAction testAction = build.getAction(AbstractTestResultAction.class);
-        if(testAction != null) {
+        if (testAction != null) {
             int total = testAction.getTotalCount();
             int failCount = testAction.getFailCount();
             int skipCount = testAction.getSkipCount();
@@ -247,7 +254,6 @@ public enum Phase {
             resultSummary.setFailedTests(getFailedTestNames(testAction));
         }
 
-
         return resultSummary;
     }
 
@@ -256,7 +262,7 @@ public enum Phase {
 
         List<? extends TestResult> results = testResultAction.getFailedTests();
 
-        for(TestResult t : results) {
+        for (TestResult t : results) {
             failedTests.add(t.getFullName());
         }
 
@@ -266,14 +272,14 @@ public enum Phase {
     private List<String> getChangedFiles(Run run) {
         List<String> affectedPaths = new ArrayList<>();
 
-        if(run instanceof AbstractBuild) {
+        if (run instanceof AbstractBuild) {
             AbstractBuild build = (AbstractBuild) run;
 
             Object[] items = build.getChangeSet().getItems();
 
-            if(items != null && items.length > 0) {
-                for(Object o : items) {
-                    if(o instanceof ChangeLogSet.Entry) {
+            if (items != null && items.length > 0) {
+                for (Object o : items) {
+                    if (o instanceof ChangeLogSet.Entry) {
                         affectedPaths.addAll(((ChangeLogSet.Entry) o).getAffectedPaths());
                     }
                 }
@@ -286,10 +292,10 @@ public enum Phase {
     private List<String> getCulprits(Run run) {
         List<String> culprits = new ArrayList<>();
 
-        if(run instanceof AbstractBuild) {
+        if (run instanceof AbstractBuild) {
             AbstractBuild build = (AbstractBuild) run;
             Set<User> buildCulprits = build.getCulprits();
-            for(User user : buildCulprits) {
+            for (User user : buildCulprits) {
                 culprits.add(user.getId());
             }
         }
@@ -322,25 +328,34 @@ public enum Phase {
         return log;
     }
 
-    public void handle(Run run, TaskListener listener, long timestamp, boolean manual, final String buildNotes, final Integer logLines, Phase phase) {
+    public void handle(
+            Run run,
+            TaskListener listener,
+            long timestamp,
+            boolean manual,
+            final String buildNotes,
+            final Integer logLines,
+            Phase phase) {
         final Job job = run.getParent();
-        final HudsonNotificationProperty property = (HudsonNotificationProperty) job.getProperty(HudsonNotificationProperty.class);
-        if ( property == null ) {
+        final HudsonNotificationProperty property =
+                (HudsonNotificationProperty) job.getProperty(HudsonNotificationProperty.class);
+        if (property == null) {
             return;
         }
 
         Result previousCompletedRunResults = findLastBuildThatFinished(run);
 
-        for ( Endpoint target : property.getEndpoints()) {
-            if ((!manual && !isRun(target, run.getResult(), previousCompletedRunResults)) || Utils.isEmpty(target.getUrlInfo().getUrlOrId())) {
+        for (Endpoint target : property.getEndpoints()) {
+            if ((!manual && !isRun(target, run.getResult(), previousCompletedRunResults))
+                    || Utils.isEmpty(target.getUrlInfo().getUrlOrId())) {
                 continue;
             }
 
-            if(Objects.nonNull(buildNotes)) {
+            if (Objects.nonNull(buildNotes)) {
                 target.setBuildNotes(buildNotes);
             }
 
-            if(Objects.nonNull(logLines) && logLines != 0) {
+            if (Objects.nonNull(logLines) && logLines != 0) {
                 target.setLoglines(logLines);
             }
 
@@ -375,32 +390,43 @@ public enum Phase {
                     }
 
                     final String branch = target.getBranch();
-                    if (!manual && environment.containsKey("BRANCH_NAME") && !environment.get("BRANCH_NAME").matches(branch)) {
-                        listener.getLogger().printf("Environment variable %s with value %s does not match configured branch filter %s%n", "BRANCH_NAME", environment.get("BRANCH_NAME"), branch);
+                    if (!manual
+                            && environment.containsKey("BRANCH_NAME")
+                            && !environment.get("BRANCH_NAME").matches(branch)) {
+                        listener.getLogger()
+                                .printf(
+                                        "Environment variable %s with value %s does not match configured branch filter %s%n",
+                                        "BRANCH_NAME", environment.get("BRANCH_NAME"), branch);
                         continue;
-                    }else if(!manual && !environment.containsKey("BRANCH_NAME") && !".*".equals(branch)){
+                    } else if (!manual && !environment.containsKey("BRANCH_NAME") && !".*".equals(branch)) {
                         listener.getLogger().printf("Environment does not contain %s variable%n", "BRANCH_NAME");
                         continue;
                     }
 
                     listener.getLogger().printf("Notifying endpoint with %s%n", urlIdString);
                     JobState jobState = buildJobState(job, run, listener, timestamp, target, phase);
-                    target.getProtocol().send(expandedUrl,
-                        target.getFormat().serialize(jobState),
-                        target.getTimeout(),
-                        target.isJson());
+                    target.getProtocol()
+                            .send(
+                                    expandedUrl,
+                                    target.getFormat().serialize(jobState),
+                                    target.getTimeout(),
+                                    target.isJson());
                 } catch (Throwable error) {
                     failed = true;
-                    error.printStackTrace( listener.error( String.format( "Failed to notify endpoint with %s", urlIdString)));
-                    listener.getLogger().printf("Failed to notify endpoint with %s - %s: %s%n",
-                        urlIdString, error.getClass().getName(), error.getMessage());
+                    error.printStackTrace(
+                            listener.error(String.format("Failed to notify endpoint with %s", urlIdString)));
+                    listener.getLogger()
+                            .printf(
+                                    "Failed to notify endpoint with %s - %s: %s%n",
+                                    urlIdString, error.getClass().getName(), error.getMessage());
                     if (triesRemaining > 0) {
-                        listener.getLogger().printf(
-                            "Reattempting to notify endpoint with %s (%d tries remaining)%n", urlIdString, triesRemaining);
+                        listener.getLogger()
+                                .printf(
+                                        "Reattempting to notify endpoint with %s (%d tries remaining)%n",
+                                        urlIdString, triesRemaining);
                     }
                 }
-            }
-            while (failed && --triesRemaining >= 0);
+            } while (failed && --triesRemaining >= 0);
         }
     }
 }

@@ -22,14 +22,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author mmitche
  */
 public class UrlInfo {
-    
+
     private String urlOrId;
     private UrlType urlType;
-    
+
     @DataBoundConstructor
     public UrlInfo(UrlType urlType, String urlOrId) {
-        setUrlOrId ( urlOrId );
-        setUrlType ( urlType );
+        setUrlOrId(urlOrId);
+        setUrlType(urlType);
     }
 
     public String getUrlOrId() {

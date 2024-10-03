@@ -27,6 +27,11 @@ import hudson.security.ACL;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -36,13 +41,6 @@ import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-
-import javax.annotation.Nonnull;
 
 @Extension
 public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescriptor {
@@ -77,15 +75,15 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
         return "Hudson Job Notification";
     }
 
-    public String getDefaultBranch(){
+    public String getDefaultBranch() {
         return Endpoint.DEFAULT_BRANCH;
     }
 
-    public int getDefaultTimeout(){
+    public int getDefaultTimeout() {
         return Endpoint.DEFAULT_TIMEOUT;
     }
-    
-    public int getDefaultRetries(){
+
+    public int getDefaultRetries() {
         return Endpoint.DEFAULT_RETRIES;
     }
 
@@ -109,18 +107,16 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
 
         return new HudsonNotificationProperty(endpoints);
     }
-    
+
     private Endpoint convertJson(JSONObject endpointObjectData) throws FormException {
         // Transform the data to get the public/secret URL data
         JSONObject urlInfoData = endpointObjectData.getJSONObject("urlInfo");
         UrlInfo urlInfo;
         if (urlInfoData.containsKey("publicUrl")) {
             urlInfo = new UrlInfo(UrlType.PUBLIC, urlInfoData.getString("publicUrl"));
-        }
-        else if (urlInfoData.containsKey("secretUrl")) {
+        } else if (urlInfoData.containsKey("secretUrl")) {
             urlInfo = new UrlInfo(UrlType.SECRET, urlInfoData.getString("secretUrl"));
-        }
-        else {
+        } else {
             throw new FormException("Expected either a public url or secret url id", "urlInfo");
         }
 
@@ -136,34 +132,35 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
 
         return endpoint;
     }
-    
+
     public FormValidation doCheckPublicUrl(
             @QueryParameter(value = "publicUrl", fixEmpty = true) String publicUrl,
-            @RelativePath ("..") @QueryParameter(value = "protocol") String protocolParameter) {
+            @RelativePath("..") @QueryParameter(value = "protocol") String protocolParameter) {
         Protocol protocol = Protocol.valueOf(protocolParameter);
         return checkUrl(publicUrl, UrlType.PUBLIC, protocol);
     }
-    
+
     public FormValidation doCheckSecretUrl(
             @QueryParameter(value = "secretUrl", fixEmpty = true) String publicUrl,
-            @RelativePath ("..") @QueryParameter(value = "protocol") String protocolParameter) {
+            @RelativePath("..") @QueryParameter(value = "protocol") String protocolParameter) {
         Protocol protocol = Protocol.valueOf(protocolParameter);
         return checkUrl(publicUrl, UrlType.SECRET, protocol);
     }
-    
+
     private FormValidation checkUrl(String urlOrId, UrlType urlType, Protocol protocol) {
         String actualUrl = urlOrId;
         if (urlType == UrlType.SECRET && !StringUtils.isEmpty(actualUrl)) {
             actualUrl = Jenkins.get().getItems(ItemGroup.class).stream()
                     .map(ig -> Utils.getSecretUrl(urlOrId, ig))
                     .filter(Objects::nonNull)
-                    .findFirst().orElse(null);
+                    .findFirst()
+                    .orElse(null);
             // Get the credentials
             if (actualUrl == null) {
                 return FormValidation.error("Could not find secret text credentials with id " + urlOrId);
             }
         }
-        
+
         try {
             protocol.validateUrl(actualUrl);
             return FormValidation.ok();
@@ -175,19 +172,18 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
             return FormValidation.error(message);
         }
     }
-    
+
     public ListBoxModel doFillSecretUrlItems(@AncestorInPath Item owner, @QueryParameter String secretUrl) {
         if (owner == null || !owner.hasPermission(Permission.CONFIGURE)) {
             return new StandardListBoxModel();
         }
-        
+
         // when configuring the job, you only want those credentials that are available to ACL.SYSTEM selectable
         // as we cannot select from a user's credentials unless they are the only user submitting the build
         // (which we cannot assume) thus ACL.SYSTEM is correct here.
         AbstractIdCredentialsListBoxModel<StandardListBoxModel, StandardCredentials> model = new StandardListBoxModel()
                 .includeEmptyValue()
-                .withAll(
-                    CredentialsProvider.lookupCredentials(
+                .withAll(CredentialsProvider.lookupCredentials(
                         StringCredentials.class, owner, ACL.SYSTEM, Collections.emptyList()));
         if (!StringUtils.isEmpty(secretUrl)) {
             // Select current value, add if missing
@@ -198,7 +194,7 @@ public final class HudsonNotificationPropertyDescriptor extends JobPropertyDescr
                 }
             }
         }
-        
+
         return model;
     }
 

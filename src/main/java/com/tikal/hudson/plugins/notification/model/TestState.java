@@ -13,11 +13,9 @@
  */
 package com.tikal.hudson.plugins.notification.model;
 
-
 import java.util.List;
 
-public class TestState
-{
+public class TestState {
     private int total;
     private int failed;
     private int passed;

@@ -18,25 +18,26 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.thoughtworks.xstream.XStream;
 import com.tikal.hudson.plugins.notification.model.JobState;
-
 import java.io.IOException;
 
 public enum Format {
     XML {
-        private transient final XStream xstream = new XStream();
+        private final transient XStream xstream = new XStream();
 
         @Override
         protected byte[] serialize(JobState jobState) throws IOException {
             xstream.processAnnotations(JobState.class);
-            return xstream.toXML(jobState).getBytes( "UTF-8" );
+            return xstream.toXML(jobState).getBytes("UTF-8");
         }
     },
     JSON {
-        private transient final Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+        private final transient Gson gson = new GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create();
 
         @Override
         protected byte[] serialize(JobState jobState) throws IOException {
-            return gson.toJson(jobState).getBytes( "UTF-8" );
+            return gson.toJson(jobState).getBytes("UTF-8");
         }
     };
 
