@@ -69,7 +69,7 @@ public class BuildState {
      *   notification.jar:
      *     archive: http://localhost:8080/job/notification-plugin/78/artifact/target/notification.jar
      */
-    private final Map<String, Map<String, String>> artifacts = new HashMap<String, Map<String, String>>();
+    private final Map<String, Map<String, String>> artifacts = new HashMap<>();
 
     public int getNumber() {
         return number;
@@ -140,7 +140,7 @@ public class BuildState {
     }
 
     public void setParameters(Map<String, String> params) {
-        this.parameters = new HashMap<String, String>(params);
+        this.parameters = new HashMap<>(params);
     }
 
     public Map<String, Map<String, String>> getArtifacts() {
@@ -263,7 +263,7 @@ public class BuildState {
         verifyNotEmpty(fileName, locationName, locationUrl);
 
         if (!artifacts.containsKey(fileName)) {
-            artifacts.put(fileName, new HashMap<String, String>());
+            artifacts.put(fileName, new HashMap<>());
         }
 
         if (artifacts.get(fileName).containsKey(locationName)) {

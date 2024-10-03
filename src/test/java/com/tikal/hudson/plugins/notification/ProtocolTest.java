@@ -206,7 +206,7 @@ public class ProtocolTest extends TestCase {
     }
 
     public void testHttpPost() throws Exception {
-        BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+        BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");
 
@@ -220,7 +220,7 @@ public class ProtocolTest extends TestCase {
     }
 
     public void testHttpPostWithBasicAuth() throws Exception {
-        BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+        BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startSecureServer(new RecordingServlet(requests), "/realpath", "fred:foo");
 
@@ -235,7 +235,7 @@ public class ProtocolTest extends TestCase {
     }
 
     public void testHttpPostWithRedirects() throws Exception {
-        BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+        BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");
 
