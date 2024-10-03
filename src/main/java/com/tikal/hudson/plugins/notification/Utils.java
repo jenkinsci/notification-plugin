@@ -40,7 +40,6 @@ public final class Utils {
      * @param strings Strings to check for empty (whitespace is trimmed) or null.
      * @throws java.lang.IllegalArgumentException Throws this exception if any string is empty.
      */
-    @SuppressWarnings("ReturnOfNull")
     public static void verifyNotEmpty(String... strings) {
         if (isEmpty(strings)) {
             throw new IllegalArgumentException(
