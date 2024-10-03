@@ -133,7 +133,7 @@ public class ProtocolTest extends TestCase {
             doPost(request, httpResponse);
         }
 
-        protected void doPost(Request request, HttpServletResponse httpResponse) throws IOException {
+        protected void doPost(Request request, HttpServletResponse httpResponse) {
             // noop
         }
     }
@@ -147,7 +147,7 @@ public class ProtocolTest extends TestCase {
         }
 
         @Override
-        protected void doPost(Request request, HttpServletResponse httpResponse) throws IOException {
+        protected void doPost(Request request, HttpServletResponse httpResponse) {
             httpResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
             httpResponse.setHeader("Location", redirectURI);
         }
@@ -194,7 +194,7 @@ public class ProtocolTest extends TestCase {
     }
 
     @Override
-    public void setUp() throws Exception {
+    public void setUp() {
         servers = new LinkedList<>();
     }
 
