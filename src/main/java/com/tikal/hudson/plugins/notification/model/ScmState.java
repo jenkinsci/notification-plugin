@@ -13,11 +13,9 @@
  */
 package com.tikal.hudson.plugins.notification.model;
 
-
 import java.util.List;
 
-public class ScmState
-{
+public class ScmState {
     private String url;
 
     private String branch;
@@ -28,33 +26,27 @@ public class ScmState
 
     private List<String> culprits;
 
-    public String getUrl ()
-    {
+    public String getUrl() {
         return url;
     }
 
-    public void setUrl ( String url )
-    {
+    public void setUrl(String url) {
         this.url = url;
     }
 
-    public String getBranch ()
-    {
+    public String getBranch() {
         return branch;
     }
 
-    public void setBranch ( String branch )
-    {
+    public void setBranch(String branch) {
         this.branch = branch;
     }
 
-    public String getCommit ()
-    {
+    public String getCommit() {
         return commit;
     }
 
-    public void setCommit ( String commit )
-    {
+    public void setCommit(String commit) {
         this.commit = commit;
     }
 

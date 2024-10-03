@@ -11,7 +11,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.tikal.hudson.plugins.notification;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -20,20 +19,20 @@ import org.kohsuke.stapler.DataBoundSetter;
 public class Endpoint {
 
     public static final Integer DEFAULT_TIMEOUT = 30000;
-    
+
     public static final Integer DEFAULT_RETRIES = 0;
 
     public static final String DEFAULT_BRANCH = ".*";
 
     private Protocol protocol = Protocol.HTTP;
-    
+
     /**
      * json as default
      */
     private Format format = Format.JSON;
-    
+
     private UrlInfo urlInfo;
-    
+
     // For backwards compatbility
     @Deprecated
     private transient String url;
@@ -45,7 +44,7 @@ public class Endpoint {
     private Integer loglines = 0;
 
     private String buildNotes;
-    
+
     private Integer retries = DEFAULT_RETRIES;
 
     private String branch = ".*";
@@ -61,23 +60,23 @@ public class Endpoint {
      */
     @Deprecated
     public Endpoint(Protocol protocol, String url, String event, Format format, Integer timeout, Integer loglines) {
-        setProtocol( protocol );
-        setUrlInfo( new UrlInfo(UrlType.PUBLIC, url) );
-        setEvent( event );
-        setFormat( format );
-        setTimeout( timeout );
-        setLoglines( loglines );
+        setProtocol(protocol);
+        setUrlInfo(new UrlInfo(UrlType.PUBLIC, url));
+        setEvent(event);
+        setFormat(format);
+        setTimeout(timeout);
+        setLoglines(loglines);
     }
-    
+
     /**
      * Adds a new endpoint for notifications
      * @param urlInfo Information about the target URL for the event.
      */
     @DataBoundConstructor
     public Endpoint(UrlInfo urlInfo) {
-        setUrlInfo ( urlInfo );
+        setUrlInfo(urlInfo);
     }
-    
+
     public UrlInfo getUrlInfo() {
         if (this.urlInfo == null) {
             this.urlInfo = new UrlInfo(UrlType.PUBLIC, "");
@@ -99,7 +98,7 @@ public class Endpoint {
      */
     @DataBoundSetter
     public void setTimeout(Integer timeout) {
-        this.timeout =  timeout;
+        this.timeout = timeout;
     }
 
     public Protocol getProtocol() {
@@ -107,7 +106,7 @@ public class Endpoint {
     }
 
     /**
-     * Sets the protocol for the 
+     * Sets the protocol for the
      * @param protocol Protocol to use.  Valid values are: UDP, TCP, HTTP.  Default is HTTP.
      * HTTP event target urls must start with 'http'
      */
@@ -116,7 +115,7 @@ public class Endpoint {
         this.protocol = protocol;
     }
 
-    public String getEvent (){
+    public String getEvent() {
         return event;
     }
 
@@ -125,12 +124,12 @@ public class Endpoint {
      * @param event 'STARTED' - Fire on job started. 'COMPLETED' - Fire on job completed. 'FINALIZED' - Fire on job finalized.
      */
     @DataBoundSetter
-    public void setEvent ( String event ){
+    public void setEvent(String event) {
         this.event = event;
     }
-    
+
     public Format getFormat() {
-        if (this.format==null){
+        if (this.format == null) {
             this.format = Format.JSON;
         }
         return format;
@@ -174,11 +173,11 @@ public class Endpoint {
     public boolean isJson() {
         return getFormat() == Format.JSON;
     }
-    
+
     public Integer getRetries() {
         return this.retries == null ? DEFAULT_RETRIES : this.retries;
     }
-    
+
     /**
      * Number of retries before giving up on contacting an endpoint
      * @param retries - Number of retries.  Default 0.
@@ -187,11 +186,11 @@ public class Endpoint {
     public void setRetries(Integer retries) {
         this.retries = retries;
     }
-    
+
     protected Object readResolve() {
         if (url != null) {
-           // Upgrade, this is a public URL
-           this.urlInfo = new UrlInfo(UrlType.PUBLIC, url);
+            // Upgrade, this is a public URL
+            this.urlInfo = new UrlInfo(UrlType.PUBLIC, url);
         }
         return this;
     }
@@ -211,6 +210,6 @@ public class Endpoint {
 
     @Override
     public String toString() {
-        return protocol+":"+urlInfo.getUrlOrId();
+        return protocol + ":" + urlInfo.getUrlOrId();
     }
 }

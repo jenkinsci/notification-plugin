@@ -13,7 +13,9 @@
  */
 package com.tikal.hudson.plugins.notification.model;
 
-import static com.tikal.hudson.plugins.notification.Utils.*;
+import static com.tikal.hudson.plugins.notification.Utils.isEmpty;
+import static com.tikal.hudson.plugins.notification.Utils.verifyNotEmpty;
+
 import com.tikal.hudson.plugins.notification.Phase;
 import hudson.model.AbstractBuild;
 import hudson.model.Job;
@@ -21,12 +23,11 @@ import hudson.model.Run;
 import hudson.plugins.s3.Entry;
 import hudson.plugins.s3.S3BucketPublisher;
 import hudson.util.DescribableList;
-import jenkins.model.Jenkins;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jenkins.model.Jenkins;
 
 public class BuildState {
 
@@ -57,9 +58,6 @@ public class BuildState {
     private String notes;
 
     private TestState testSummary;
-
-
-
 
     /**
      *  Map of artifacts: file name => Map of artifact locations ( location name => artifact URL )
@@ -142,10 +140,10 @@ public class BuildState {
     }
 
     public void setParameters(Map<String, String> params) {
-        this.parameters = new HashMap<String, String>( params );
+        this.parameters = new HashMap<String, String>(params);
     }
 
-    public Map<String, Map<String, String>> getArtifacts () {
+    public Map<String, Map<String, String>> getArtifacts() {
         return artifacts;
     }
 
@@ -157,13 +155,11 @@ public class BuildState {
         return displayName;
     }
 
-    public ScmState getScm ()
-    {
+    public ScmState getScm() {
         return scm;
     }
 
-    public void setScm ( ScmState scmState )
-    {
+    public void setScm(ScmState scmState) {
         this.scm = scmState;
     }
 
@@ -196,57 +192,65 @@ public class BuildState {
      * @param job Job to update
      * @param run Run to update
      */
-    public void updateArtifacts ( Job job, Run run )
-    {
-        updateArchivedArtifacts( run );
-        updateS3Artifacts( job, run );
+    public void updateArtifacts(Job job, Run run) {
+        updateArchivedArtifacts(run);
+        updateS3Artifacts(job, run);
     }
 
-
-    private void updateArchivedArtifacts ( Run run )
-    {
-        @SuppressWarnings( "unchecked" )
+    private void updateArchivedArtifacts(Run run) {
+        @SuppressWarnings("unchecked")
         List<Run.Artifact> buildArtifacts = run.getArtifacts();
 
-        for ( Run.Artifact a : buildArtifacts ) {
+        for (Run.Artifact a : buildArtifacts) {
             String artifactUrl = Jenkins.getInstance().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
-            updateArtifact( a.relativePath, "archive", artifactUrl );
+            updateArtifact(a.relativePath, "archive", artifactUrl);
         }
     }
 
+    private void updateS3Artifacts(Job job, Run run) {
+        if (Jenkins.getInstance().getPlugin("s3") == null) {
+            return;
+        }
+        if (!(run instanceof AbstractBuild)) {
+            return;
+        }
+        if (isEmpty(job.getName())) {
+            return;
+        }
 
-    private void updateS3Artifacts ( Job job, Run run )
-    {
-        if ( Jenkins.getInstance().getPlugin( "s3" ) == null ) { return; }
-        if ( ! ( run instanceof AbstractBuild )){ return; }
-        if ( isEmpty( job.getName())){ return; }
+        DescribableList publishers = ((AbstractBuild) run).getProject().getPublishersList();
+        S3BucketPublisher s3Publisher = (S3BucketPublisher) publishers.get(S3BucketPublisher.class);
 
-        DescribableList   publishers  = (( AbstractBuild ) run ).getProject().getPublishersList();
-        S3BucketPublisher s3Publisher = ( S3BucketPublisher ) publishers.get( S3BucketPublisher.class );
+        if (s3Publisher == null) {
+            return;
+        }
 
-        if ( s3Publisher == null ){ return; }
+        for (Entry entry : s3Publisher.getEntries()) {
 
-        for ( Entry entry : s3Publisher.getEntries()) {
-
-            if ( isEmpty( entry.sourceFile, entry.selectedRegion, entry.bucket )){ continue; }
-            String fileName = new File( entry.sourceFile ).getName();
-            if ( isEmpty( fileName )){ continue; }
+            if (isEmpty(entry.sourceFile, entry.selectedRegion, entry.bucket)) {
+                continue;
+            }
+            String fileName = new File(entry.sourceFile).getName();
+            if (isEmpty(fileName)) {
+                continue;
+            }
 
             // https://s3-eu-west-1.amazonaws.com/evgenyg-temp/
-            String bucketUrl = String.format( "https://s3-%s.amazonaws.com/%s",
-                                              entry.selectedRegion.toLowerCase().replace( '_', '-' ),
-                                              entry.bucket );
+            String bucketUrl = String.format(
+                    "https://s3-%s.amazonaws.com/%s",
+                    entry.selectedRegion.toLowerCase().replace('_', '-'), entry.bucket);
 
-            String fileUrl   = entry.managedArtifacts ?
-                // https://s3-eu-west-1.amazonaws.com/evgenyg-temp/jobs/notification-plugin/21/notification.hpi
-                String.format( "%s/jobs/%s/%s/%s", bucketUrl, job.getName(), run.getNumber(), fileName ) :
-                // https://s3-eu-west-1.amazonaws.com/evgenyg-temp/notification.hpi
-                String.format( "%s/%s", bucketUrl, fileName );
+            String fileUrl = entry.managedArtifacts
+                    ?
+                    // https://s3-eu-west-1.amazonaws.com/evgenyg-temp/jobs/notification-plugin/21/notification.hpi
+                    String.format("%s/jobs/%s/%s/%s", bucketUrl, job.getName(), run.getNumber(), fileName)
+                    :
+                    // https://s3-eu-west-1.amazonaws.com/evgenyg-temp/notification.hpi
+                    String.format("%s/%s", bucketUrl, fileName);
 
-            updateArtifact( fileName, "s3", fileUrl );
+            updateArtifact(fileName, "s3", fileUrl);
         }
     }
-
 
     /**
      * Updates an artifact URL.
@@ -255,20 +259,19 @@ public class BuildState {
      * @param locationName artifact location name, like "s3" or "archive"
      * @param locationUrl  artifact URL at the location specified
      */
-    private void updateArtifact( String fileName, String locationName, String locationUrl )
-    {
-        verifyNotEmpty( fileName, locationName, locationUrl );
+    private void updateArtifact(String fileName, String locationName, String locationUrl) {
+        verifyNotEmpty(fileName, locationName, locationUrl);
 
-        if ( ! artifacts.containsKey( fileName )) {
-            artifacts.put( fileName, new HashMap<String, String>());
+        if (!artifacts.containsKey(fileName)) {
+            artifacts.put(fileName, new HashMap<String, String>());
         }
 
-        if ( artifacts.get( fileName ).containsKey( locationName )) {
-            throw new RuntimeException( String.format(
-                "Adding artifacts mapping '%s/%s/%s' - artifacts Map already contains mapping of location '%s': %s",
-                fileName, locationName, locationUrl, locationName, artifacts ));
+        if (artifacts.get(fileName).containsKey(locationName)) {
+            throw new RuntimeException(String.format(
+                    "Adding artifacts mapping '%s/%s/%s' - artifacts Map already contains mapping of location '%s': %s",
+                    fileName, locationName, locationUrl, locationName, artifacts));
         }
 
-        artifacts.get( fileName ).put( locationName, locationUrl );
+        artifacts.get(fileName).put(locationName, locationUrl);
     }
 }
