@@ -67,7 +67,7 @@ public enum Protocol {
             // Verifying if the HTTP_PROXY is available
             final String httpProxyUrl = System.getenv().get("http_proxy");
             URL proxyUrl = null;
-            if (httpProxyUrl != null && httpProxyUrl.length() > 0) {
+            if (httpProxyUrl != null && !httpProxyUrl.isEmpty()) {
                 proxyUrl = new URL(httpProxyUrl);
                 if (!proxyUrl.getProtocol().startsWith("http")) {
                     throw new IllegalArgumentException("Not an http(s) url: " + httpProxyUrl);
@@ -157,6 +157,6 @@ public enum Protocol {
     }
 
     private static boolean isEmpty(String s) {
-        return ((s == null) || (s.trim().length() < 1));
+        return ((s == null) || (s.trim().isEmpty()));
     }
 }

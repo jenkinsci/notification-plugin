@@ -27,7 +27,7 @@ public final class Utils {
         }
 
         for (String s : strings) {
-            if ((s == null) || (s.trim().length() < 1)) {
+            if ((s == null) || (s.trim().isEmpty())) {
                 return true;
             }
         }
