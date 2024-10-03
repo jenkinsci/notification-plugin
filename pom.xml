@@ -93,7 +93,7 @@
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>s3</artifactId>
-			<version>0.12.1</version>
+			<version>483.vcb_db_3dcee68f</version>
 			<optional>true</optional>
 			<exclusions>
 				<exclusion>
