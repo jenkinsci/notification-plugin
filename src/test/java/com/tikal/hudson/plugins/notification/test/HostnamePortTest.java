@@ -14,7 +14,7 @@
 package com.tikal.hudson.plugins.notification.test;
 
 import com.tikal.hudson.plugins.notification.HostnamePort;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class HostnamePortTest {

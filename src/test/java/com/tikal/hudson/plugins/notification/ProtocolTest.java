@@ -133,7 +133,7 @@ public class ProtocolTest extends TestCase {
             doPost(request, httpResponse);
         }
 
-        protected void doPost(Request request, HttpServletResponse httpResponse) throws IOException {
+        protected void doPost(Request request, HttpServletResponse httpResponse) {
             // noop
         }
     }
@@ -147,7 +147,7 @@ public class ProtocolTest extends TestCase {
         }
 
         @Override
-        protected void doPost(Request request, HttpServletResponse httpResponse) throws IOException {
+        protected void doPost(Request request, HttpServletResponse httpResponse) {
             httpResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
             httpResponse.setHeader("Location", redirectURI);
         }
@@ -194,7 +194,7 @@ public class ProtocolTest extends TestCase {
     }
 
     @Override
-    public void setUp() throws Exception {
+    public void setUp() {
         servers = new LinkedList<>();
     }
 
@@ -206,7 +206,7 @@ public class ProtocolTest extends TestCase {
     }
 
     public void testHttpPost() throws Exception {
-        BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+        BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");
 
@@ -220,7 +220,7 @@ public class ProtocolTest extends TestCase {
     }
 
     public void testHttpPostWithBasicAuth() throws Exception {
-        BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+        BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startSecureServer(new RecordingServlet(requests), "/realpath", "fred:foo");
 
@@ -235,7 +235,7 @@ public class ProtocolTest extends TestCase {
     }
 
     public void testHttpPostWithRedirects() throws Exception {
-        BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+        BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");
 

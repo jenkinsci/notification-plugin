@@ -25,7 +25,7 @@ public class HudsonNotificationProperty extends JobProperty<Job<?, ?>> {
 
     @DataBoundConstructor
     public HudsonNotificationProperty(List<Endpoint> endpoints) {
-        this.endpoints = new ArrayList<Endpoint>(endpoints);
+        this.endpoints = new ArrayList<>(endpoints);
     }
 
     public List<Endpoint> getEndpoints() {

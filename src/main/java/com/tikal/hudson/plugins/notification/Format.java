@@ -19,6 +19,7 @@ import com.google.gson.GsonBuilder;
 import com.thoughtworks.xstream.XStream;
 import com.tikal.hudson.plugins.notification.model.JobState;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public enum Format {
     XML {
@@ -27,7 +28,7 @@ public enum Format {
         @Override
         protected byte[] serialize(JobState jobState) throws IOException {
             xstream.processAnnotations(JobState.class);
-            return xstream.toXML(jobState).getBytes("UTF-8");
+            return xstream.toXML(jobState).getBytes(StandardCharsets.UTF_8);
         }
     },
     JSON {
@@ -37,7 +38,7 @@ public enum Format {
 
         @Override
         protected byte[] serialize(JobState jobState) throws IOException {
-            return gson.toJson(jobState).getBytes("UTF-8");
+            return gson.toJson(jobState).getBytes(StandardCharsets.UTF_8);
         }
     };
 

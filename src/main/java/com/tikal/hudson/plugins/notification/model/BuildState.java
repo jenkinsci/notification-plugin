@@ -69,7 +69,7 @@ public class BuildState {
      *   notification.jar:
      *     archive: http://localhost:8080/job/notification-plugin/78/artifact/target/notification.jar
      */
-    private final Map<String, Map<String, String>> artifacts = new HashMap<String, Map<String, String>>();
+    private final Map<String, Map<String, String>> artifacts = new HashMap<>();
 
     public int getNumber() {
         return number;
@@ -140,7 +140,7 @@ public class BuildState {
     }
 
     public void setParameters(Map<String, String> params) {
-        this.parameters = new HashMap<String, String>(params);
+        this.parameters = new HashMap<>(params);
     }
 
     public Map<String, Map<String, String>> getArtifacts() {
@@ -202,13 +202,13 @@ public class BuildState {
         List<Run.Artifact> buildArtifacts = run.getArtifacts();
 
         for (Run.Artifact a : buildArtifacts) {
-            String artifactUrl = Jenkins.getInstance().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
+            String artifactUrl = Jenkins.get().getRootUrl() + run.getUrl() + "artifact/" + a.getHref();
             updateArtifact(a.relativePath, "archive", artifactUrl);
         }
     }
 
     private void updateS3Artifacts(Job job, Run run) {
-        if (Jenkins.getInstance().getPlugin("s3") == null) {
+        if (Jenkins.get().getPlugin("s3") == null) {
             return;
         }
         if (!(run instanceof AbstractBuild)) {
@@ -263,7 +263,7 @@ public class BuildState {
         verifyNotEmpty(fileName, locationName, locationUrl);
 
         if (!artifacts.containsKey(fileName)) {
-            artifacts.put(fileName, new HashMap<String, String>());
+            artifacts.put(fileName, new HashMap<>());
         }
 
         if (artifacts.get(fileName).containsKey(locationName)) {

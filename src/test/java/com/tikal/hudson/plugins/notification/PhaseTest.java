@@ -2,7 +2,6 @@ package com.tikal.hudson.plugins.notification;
 
 import static com.tikal.hudson.plugins.notification.UrlType.PUBLIC;
 import static com.tikal.hudson.plugins.notification.UrlType.SECRET;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
@@ -26,6 +25,7 @@ import hudson.model.TaskListener;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.util.List;
 import jenkins.model.Jenkins;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -184,7 +184,7 @@ public class PhaseTest {
     public void testRunNoPreviousRunUrlNull() {
         when(run.getParent()).thenReturn(job);
         when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
-        when(property.getEndpoints()).thenReturn(asList(endpoint));
+        when(property.getEndpoints()).thenReturn(List.of(endpoint));
         when(endpoint.getUrlInfo()).thenReturn(urlInfo);
 
         Phase.STARTED.handle(run, listener, 0L);
@@ -197,7 +197,7 @@ public class PhaseTest {
     public void testRunNoPreviousRunUrlTypePublicUnresolvedUrl() throws IOException, InterruptedException {
         when(run.getParent()).thenReturn(job);
         when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
-        when(property.getEndpoints()).thenReturn(asList(endpoint));
+        when(property.getEndpoints()).thenReturn(List.of(endpoint));
         when(endpoint.getUrlInfo()).thenReturn(urlInfo);
         when(run.getEnvironment(listener)).thenReturn(environment);
         when(urlInfo.getUrlOrId()).thenReturn("$someUrl");
@@ -216,7 +216,7 @@ public class PhaseTest {
         byte[] data = "data".getBytes();
         try (MockedStatic<Jenkins> jenkinsMockedStatic = mockStatic(Jenkins.class)) {
             jenkinsMockedStatic.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
-            jenkinsMockedStatic.when(Jenkins::getInstance).thenReturn(jenkins);
+            jenkinsMockedStatic.when(Jenkins::get).thenReturn(jenkins);
 
             Protocol httpProtocolSpy = spy(Protocol.HTTP);
             when(endpoint.getProtocol()).thenReturn(httpProtocolSpy);
@@ -230,7 +230,7 @@ public class PhaseTest {
 
             when(run.getParent()).thenReturn(job);
             when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
-            when(property.getEndpoints()).thenReturn(asList(endpoint));
+            when(property.getEndpoints()).thenReturn(List.of(endpoint));
             when(endpoint.getUrlInfo()).thenReturn(urlInfo);
             when(endpoint.getBranch()).thenReturn("branchName");
             when(run.getEnvironment(listener)).thenReturn(environment);
@@ -256,7 +256,7 @@ public class PhaseTest {
         try (MockedStatic<Jenkins> jenkinsMockedStatic = mockStatic(Jenkins.class);
                 MockedStatic<Utils> utilsMockedStatic = mockStatic(Utils.class)) {
             jenkinsMockedStatic.when(Jenkins::getInstanceOrNull).thenReturn(jenkins);
-            jenkinsMockedStatic.when(Jenkins::getInstance).thenReturn(jenkins);
+            jenkinsMockedStatic.when(Jenkins::get).thenReturn(jenkins);
             utilsMockedStatic
                     .when(() -> Utils.getSecretUrl("credentialsId", jenkins))
                     .thenReturn("$secretUrl");
@@ -273,7 +273,7 @@ public class PhaseTest {
 
             when(run.getParent()).thenReturn(job);
             when(job.getProperty(HudsonNotificationProperty.class)).thenReturn(property);
-            when(property.getEndpoints()).thenReturn(asList(endpoint));
+            when(property.getEndpoints()).thenReturn(List.of(endpoint));
             when(endpoint.getUrlInfo()).thenReturn(urlInfo);
             when(endpoint.getBranch()).thenReturn(".*");
             when(run.getEnvironment(listener)).thenReturn(environment);

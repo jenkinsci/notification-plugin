@@ -67,7 +67,7 @@ public enum Protocol {
             // Verifying if the HTTP_PROXY is available
             final String httpProxyUrl = System.getenv().get("http_proxy");
             URL proxyUrl = null;
-            if (httpProxyUrl != null && httpProxyUrl.length() > 0) {
+            if (httpProxyUrl != null && !httpProxyUrl.isEmpty()) {
                 proxyUrl = new URL(httpProxyUrl);
                 if (!proxyUrl.getProtocol().startsWith("http")) {
                     throw new IllegalArgumentException("Not an http(s) url: " + httpProxyUrl);
@@ -75,8 +75,9 @@ public enum Protocol {
             }
 
             Proxy proxy = Proxy.NO_PROXY;
-            if (Jenkins.getInstance() != null && Jenkins.getInstance().proxy != null) {
-                proxy = Jenkins.getInstance().proxy.createProxy(targetUrl.getHost());
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins != null && jenkins.proxy != null) {
+                proxy = jenkins.proxy.createProxy(targetUrl.getHost());
             } else if (proxyUrl != null) {
                 // Proxy connection to the address provided
                 final int proxyPort = proxyUrl.getPort() > 0 ? proxyUrl.getPort() : 80;
@@ -101,12 +102,9 @@ public enum Protocol {
             connection.setReadTimeout(timeout);
             connection.connect();
             try {
-                OutputStream output = connection.getOutputStream();
-                try {
+                try (OutputStream output = connection.getOutputStream()) {
                     output.write(data);
                     output.flush();
-                } finally {
-                    output.close();
                 }
             } finally {
                 // Follow an HTTP Temporary Redirect if we get one,
@@ -156,6 +154,6 @@ public enum Protocol {
     }
 
     private static boolean isEmpty(String s) {
-        return ((s == null) || (s.trim().length() < 1));
+        return ((s == null) || (s.trim().isEmpty()));
     }
 }

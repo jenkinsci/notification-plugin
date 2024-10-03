@@ -69,7 +69,6 @@ public enum Phase {
         return null;
     }
 
-    @SuppressWarnings("CastToConcreteClass")
     public void handle(Run run, TaskListener listener, long timestamp) {
         handle(run, listener, timestamp, false, null, 0, this);
     }
