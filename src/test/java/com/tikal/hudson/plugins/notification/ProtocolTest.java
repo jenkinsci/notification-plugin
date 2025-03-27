@@ -1,5 +1,5 @@
 /*
-+ * The MIT License
+ * The MIT License
  *
  * Copyright (c) 2011, CloudBees, Inc.
  *
@@ -24,27 +24,23 @@
 package com.tikal.hudson.plugins.notification;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-import com.google.common.io.CharStreams;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import junit.framework.TestCase;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -57,11 +53,14 @@ public class ProtocolTest extends TestCase {
         private final String body;
         private final String userInfo;
 
-        Request(HttpServletRequest request) throws IOException {
-            this.url = request.getRequestURL().toString();
-            this.method = request.getMethod();
-            this.body = CharStreams.toString(request.getReader());
-            String auth = request.getHeader("Authorization");
+        Request(HttpExchange he) throws IOException {
+            InetSocketAddress address = he.getLocalAddress();
+            this.url = "http://" + address.getHostString() + ":"
+                    + address.getPort()
+                    + he.getRequestURI().toString();
+            this.method = he.getRequestMethod();
+            this.body = new String(he.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            String auth = he.getRequestHeaders().getFirst("Authorization");
             this.userInfo =
                     (null == auth) ? null : new String(Base64.getDecoder().decode(auth.split(" ")[1])) + "@";
         }
@@ -75,7 +74,7 @@ public class ProtocolTest extends TestCase {
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(url, method, body);
+            return Objects.hash(url, method, body);
         }
 
         @Override
@@ -84,9 +83,9 @@ public class ProtocolTest extends TestCase {
                 return false;
             }
             Request other = (Request) obj;
-            return Objects.equal(url, other.url)
-                    && Objects.equal(method, other.method)
-                    && Objects.equal(body, other.body);
+            return Objects.equals(url, other.url)
+                    && Objects.equals(method, other.method)
+                    && Objects.equals(body, other.body);
         }
 
         @Override
@@ -112,7 +111,7 @@ public class ProtocolTest extends TestCase {
         }
     }
 
-    static class RecordingServlet extends HttpServlet {
+    static class RecordingServlet implements HttpHandler {
         private final BlockingQueue<Request> requests;
 
         public RecordingServlet(BlockingQueue<Request> requests) {
@@ -120,58 +119,55 @@ public class ProtocolTest extends TestCase {
         }
 
         @Override
-        protected void doPost(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-                throws ServletException, IOException {
+        public void handle(HttpExchange he) throws IOException {
 
-            Request request = new Request(httpRequest);
+            Request request = new Request(he);
             try {
                 requests.put(request);
             } catch (InterruptedException e) {
-                throw new ServletException(e);
+                throw new IOException("Interrupted while adding request to queue", e);
             }
-
-            doPost(request, httpResponse);
-        }
-
-        protected void doPost(Request request, HttpServletResponse httpResponse) {
-            // noop
+            he.sendResponseHeaders(HttpURLConnection.HTTP_OK, 0);
+            he.close();
         }
     }
 
-    static class RedirectHandler extends RecordingServlet {
+    static class RedirectHandler implements HttpHandler {
+        private final BlockingQueue<Request> requests;
         private final String redirectURI;
 
-        RedirectHandler(BlockingQueue<Request> requests, String redirectURI) {
-            super(requests);
-            this.redirectURI = redirectURI;
+        public RedirectHandler(BlockingQueue<Request> requests, String redirectURI) {
+            this.requests = Objects.requireNonNull(requests);
+            this.redirectURI = Objects.requireNonNull(redirectURI);
         }
 
         @Override
-        protected void doPost(Request request, HttpServletResponse httpResponse) {
-            httpResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-            httpResponse.setHeader("Location", redirectURI);
+        public void handle(HttpExchange he) throws IOException {
+            Request request = new Request(he);
+            try {
+                requests.put(request);
+            } catch (InterruptedException e) {
+                throw new IOException("Interrupted while adding request to queue", e);
+            }
+            he.getResponseHeaders().set("Location", redirectURI);
+            he.sendResponseHeaders(307, -1);
+            he.close();
         }
     }
 
-    private List<Server> servers;
+    private List<HttpServer> servers;
 
     interface UrlFactory {
         String getUrl(String path);
     }
 
-    private UrlFactory startServer(Servlet servlet, String path) throws Exception {
-        return startSecureServer(servlet, path, "");
+    private UrlFactory startServer(HttpHandler handler, String path) throws Exception {
+        return startSecureServer(handler, path, "");
     }
 
-    private UrlFactory startSecureServer(Servlet servlet, String path, String authority) throws Exception {
-        Server server = new Server();
-        ServerConnector connector = new ServerConnector(server);
-        server.setConnectors(new Connector[] {connector});
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        context.addServlet(new ServletHolder(servlet), path);
-        server.setHandler(context);
+    private UrlFactory startSecureServer(HttpHandler handler, String path, String authority) throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext(path, handler);
 
         server.start();
         servers.add(server);
@@ -180,7 +176,9 @@ public class ProtocolTest extends TestCase {
             authority += "@";
         }
 
-        final URL serverUrl = new URL(String.format("http://%slocalhost:%d", authority, connector.getLocalPort()));
+        InetSocketAddress address = server.getAddress();
+        final URL serverUrl =
+                new URL(String.format("http://%s%s:%d", authority, address.getHostString(), address.getPort()));
         return new UrlFactory() {
             @Override
             public String getUrl(String path) {
@@ -199,9 +197,9 @@ public class ProtocolTest extends TestCase {
     }
 
     @Override
-    public void tearDown() throws Exception {
-        for (Server server : servers) {
-            server.stop();
+    public void tearDown() {
+        for (HttpServer server : servers) {
+            server.stop(1);
         }
     }
 
