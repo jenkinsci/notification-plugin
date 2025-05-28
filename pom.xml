@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.9</version>
+    <version>5.17</version>
     <relativePath />
   </parent>
 
@@ -67,7 +67,7 @@
     <changelist>-SNAPSHOT</changelist>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.479</jenkins.baseline>
-    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
+    <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <spotless.check.skip>false</spotless.check.skip>
   </properties>
@@ -77,7 +77,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>4051.v78dce3ce8b_d6</version>
+        <version>4836.vdf03ded1f27c</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -109,7 +109,6 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>s3</artifactId>
-      <version>496.v320cdd5a_1f65</version>
       <optional>true</optional>
       <exclusions>
         <exclusion>
