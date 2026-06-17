@@ -19,7 +19,7 @@
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
       <distribution>repo</distribution>
       <comments>A business-friendly OSS license</comments>
     </license>
@@ -31,27 +31,27 @@
       <name>Mark Berner</name>
       <email>markb@tikalk.com</email>
       <organization>Tikal Knowledge</organization>
-      <organizationUrl>http://tikalk.com</organizationUrl>
+      <organizationUrl>https://tikalk.com</organizationUrl>
     </developer>
     <developer>
       <id>hagzag</id>
       <name>Haggai Philip Zagury</name>
       <email>hagzag@tikalk.com</email>
       <organization>Tikal Knowledge</organization>
-      <organizationUrl>http://tikalk.com</organizationUrl>
+      <organizationUrl>https://tikalk.com</organizationUrl>
     </developer>
     <developer>
       <id>evgenyg</id>
       <name>Evgeny Goldin</name>
       <email>evgenyg@gmail.com</email>
       <organization>AKQA</organization>
-      <organizationUrl>http://akqa.com</organizationUrl>
+      <organizationUrl>https://akqa.com</organizationUrl>
     </developer>
     <developer>
       <id>cohencil</id>
       <name>Chen Cohen</name>
       <email>chenc@tikalk.com</email>
-      <organizationUrl>http://tikalk.com</organizationUrl>
+      <organizationUrl>https://tikalk.com</organizationUrl>
     </developer>
   </developers>
 
@@ -135,14 +135,8 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>net.sf.ezmorph</groupId>
-      <artifactId>ezmorph</artifactId>
-      <version>1.0.6</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
