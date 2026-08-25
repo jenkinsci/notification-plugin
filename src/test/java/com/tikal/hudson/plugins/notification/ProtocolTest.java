@@ -23,6 +23,9 @@
  */
 package com.tikal.hudson.plugins.notification;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.base.MoreObjects;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -40,12 +43,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Kohsuke Kawaguchi
  */
-public class ProtocolTest extends TestCase {
+class ProtocolTest {
 
     static class Request {
         private final String url;
@@ -79,10 +84,9 @@ public class ProtocolTest extends TestCase {
 
         @Override
         public boolean equals(Object obj) {
-            if (!(obj instanceof Request)) {
+            if (!(obj instanceof Request other)) {
                 return false;
             }
-            Request other = (Request) obj;
             return Objects.equals(url, other.url)
                     && Objects.equals(method, other.method)
                     && Objects.equals(body, other.body);
@@ -191,19 +195,20 @@ public class ProtocolTest extends TestCase {
         };
     }
 
-    @Override
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         servers = new LinkedList<>();
     }
 
-    @Override
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         for (HttpServer server : servers) {
             server.stop(1);
         }
     }
 
-    public void testHttpPost() throws Exception {
+    @Test
+    void testHttpPost() throws Exception {
         BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");
@@ -217,7 +222,8 @@ public class ProtocolTest extends TestCase {
         assertTrue(requests.isEmpty());
     }
 
-    public void testHttpPostWithBasicAuth() throws Exception {
+    @Test
+    void testHttpPostWithBasicAuth() throws Exception {
         BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startSecureServer(new RecordingServlet(requests), "/realpath", "fred:foo");
@@ -232,7 +238,8 @@ public class ProtocolTest extends TestCase {
         assertEquals(new Request(uri, "POST", "Hello").getUrl(), theRequest.getUrlWithAuthority());
     }
 
-    public void testHttpPostWithRedirects() throws Exception {
+    @Test
+    void testHttpPostWithRedirects() throws Exception {
         BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
 
         UrlFactory urlFactory = startServer(new RecordingServlet(requests), "/realpath");
