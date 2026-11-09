@@ -19,6 +19,14 @@ public class EndpointTest {
     }
 
     @Test
+    public void branchDefaultsWhenBlank() {
+        Endpoint endpoint = new Endpoint(new UrlInfo(UrlType.PUBLIC, "http://localhost"));
+        endpoint.setBranch(" ");
+
+        assertEquals(Endpoint.DEFAULT_BRANCH, endpoint.getBranch());
+    }
+
+    @Test
     public void branchKeepsConfiguredFilter() {
         Endpoint endpoint = new Endpoint(new UrlInfo(UrlType.PUBLIC, "http://localhost"));
         endpoint.setBranch("master");

@@ -196,7 +196,7 @@ public class Endpoint {
     }
 
     public String getBranch() {
-        return branch == null ? DEFAULT_BRANCH : branch;
+        return Utils.isEmpty(branch) ? DEFAULT_BRANCH : branch;
     }
 
     /**
