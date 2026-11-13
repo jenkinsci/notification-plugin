@@ -13,22 +13,24 @@
  */
 package com.tikal.hudson.plugins.notification.test;
 
-import com.tikal.hudson.plugins.notification.HostnamePort;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class HostnamePortTest {
+import com.tikal.hudson.plugins.notification.HostnamePort;
+import org.junit.jupiter.api.Test;
+
+class HostnamePortTest {
 
     @Test
-    public void parseUrlTest() {
+    void parseUrlTest() {
         HostnamePort hnp = HostnamePort.parseUrl("111");
-        Assert.assertNull(hnp);
+        assertNull(hnp);
         hnp = HostnamePort.parseUrl(null);
-        Assert.assertNull(hnp);
+        assertNull(hnp);
         hnp = HostnamePort.parseUrl("localhost:123");
-        Assert.assertEquals("localhost", hnp.hostname);
-        Assert.assertEquals(123, hnp.port);
+        assertEquals("localhost", hnp.hostname);
+        assertEquals(123, hnp.port);
         hnp = HostnamePort.parseUrl("localhost:123456");
-        Assert.assertEquals(12345, hnp.port);
+        assertEquals(12345, hnp.port);
     }
 }
