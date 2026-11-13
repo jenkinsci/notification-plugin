@@ -47,7 +47,7 @@ public class Endpoint {
 
     private Integer retries = DEFAULT_RETRIES;
 
-    private String branch = ".*";
+    private String branch = DEFAULT_BRANCH;
 
     /**
      * Adds a new endpoint for notifications
@@ -196,7 +196,7 @@ public class Endpoint {
     }
 
     public String getBranch() {
-        return branch;
+        return Utils.isEmpty(branch) ? DEFAULT_BRANCH : branch;
     }
 
     /**

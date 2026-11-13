@@ -396,7 +396,9 @@ public enum Phase {
                                         "Environment variable %s with value %s does not match configured branch filter %s%n",
                                         "BRANCH_NAME", environment.get("BRANCH_NAME"), branch);
                         continue;
-                    } else if (!manual && !environment.containsKey("BRANCH_NAME") && !".*".equals(branch)) {
+                    } else if (!manual
+                            && !environment.containsKey("BRANCH_NAME")
+                            && !Endpoint.DEFAULT_BRANCH.equals(branch)) {
                         listener.getLogger().printf("Environment does not contain %s variable%n", "BRANCH_NAME");
                         continue;
                     }
